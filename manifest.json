@@ -1,0 +1,20 @@
+{
+  "name": "Spa Manager",
+  "short_name": "Spa",
+  "description": "Gestion et suivi du traitement d'eau pour Spa",
+  "lang": "fr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0284c7",
+  "theme_color": "#0284c7",
+  "icons": [
+    {
+      "src": "./🧪.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
