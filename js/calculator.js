@@ -1,10 +1,10 @@
 export const productTypes = [
-    { id: 'ph_minus', name: 'pH Moins (g)' },
-    { id: 'ph_plus', name: 'pH Plus (g)' },
-    { id: 'tac_plus', name: 'TAC Plus (g)' },
-    { id: 'chlore_choc', name: 'Chlore Choc (g)' },
-    { id: 'brome', name: 'Brome (g)' },
-    { id: 'oxygene', name: 'Oxygène Actif (g)' },
+    { id: 'ph_minus', name: 'pH -' },
+    { id: 'ph_plus', name: 'pH +' },
+    { id: 'tac_plus', name: 'TAC +' },
+    { id: 'chlore_choc', name: 'Chlore Choc' },
+    { id: 'brome', name: 'Brome' },
+    { id: 'oxygene', name: 'Oxygène Actif' },
     { id: 'salt_electrolysis', name: 'Sel / ⚡ Électrolyseur' }
 ];
 

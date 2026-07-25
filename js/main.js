@@ -244,8 +244,24 @@ export function calculateAndSave() {
         if (disinfectantType === 'sel') {
             const saltProduct = savedProducts.find(p => p.type === 'salt_electrolysis');
             const spaVol = parseFloat(localStorage.getItem('spa_vol')) || 1.5;
-            const calcSalt = saltProduct ? Math.round((saltProduct.m / saltProduct.d) * diffChl * spaVol) : 500;
-            stepsHTML += generateStepHTML(3, `Désinfectant bas - Électrolyse`, 'salt_electrolysis', 'Sel', diffChl, "Marche forcée", { value: calcSalt, unit: 'g' });
+            
+            // 1. Calcul de la masse de sel en grammes (ex: m / d * diff * volume)
+            const calcSalt = saltProduct && saltProduct.d > 0 
+                ? Math.round((saltProduct.m / saltProduct.d) * diffChl * spaVol) 
+                : Math.round(500 * diffChl);
+            
+            // 2. Calcul du temps d'électrolyse en heures (ex: temps de base v ajusté selon le delta et le volume)
+            const baseHours = saltProduct ? parseFloat(saltProduct.v) || 2.0 : 2.0;
+            const baseDelta = saltProduct ? parseFloat(saltProduct.d) || 1.0 : 1.0;
+            
+            let calcHours = 0;
+            if (baseDelta > 0) {
+                calcHours = Math.round((baseHours / baseDelta) * diffChl * spaVol * 10) / 10;
+            }
+            if (calcHours <= 0) calcHours = 0.5; // Minimum d'affichage si l'écart est infime
+
+            const saltAdvice = `Ajouter ${calcSalt}g de sel, puis lancer l'électrolyse pendant ${calcHours}h`;
+            stepsHTML += generateStepHTML(3, `Traitement Sel & Électrolyse`, 'salt_electrolysis', 'Électrolyseur / Sel', diffChl, saltAdvice, { value: calcSalt, unit: 'g' });
         } else {
             const prodConfig = {
                 brome: { key: 'brome', name: 'Brome', wait: 'Dissolution complète' },
