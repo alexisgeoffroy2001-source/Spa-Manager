@@ -13,8 +13,8 @@
     <meta name="apple-mobile-web-app-title" content="Spa Manager">
 
     <!-- Icônes -->
-    <link rel="apple-touch-icon" href="./🧪.png">
-    <link rel="icon" type="image/x-icon" href="🧪.ico">
+    <link rel="apple-touch-icon" href="./images/🧪.png">
+    <link rel="icon" type="image/x-icon" href="./images/🧪.ico">
 
     <!-- Styles CSS Externes -->
     <link rel="stylesheet" href="style.css">
@@ -79,6 +79,12 @@
             <div id="treatmentLogsContainer">
                 <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Aucun traitement enregistré pour le moment.</p>
             </div>
+            <!-- Pagination Historique Traitements -->
+            <div id="treatmentPagination" style="display: none; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border-card);">
+                <button type="button" class="btn-secondary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 0.8rem;" onclick="window.spaApp.prevTreatmentPage()">◀ Précédent</button>
+                <span id="treatmentPageIndicator" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Page 1/1</span>
+                <button type="button" class="btn-secondary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 0.8rem;" onclick="window.spaApp.nextTreatmentPage()">Suivant ▶</button>
+            </div>
         </div>
 
         <div class="card">
@@ -117,6 +123,12 @@
                     <thead><tr id="historyTableHeader"></tr></thead>
                     <tbody></tbody>
                 </table>
+            </div>
+            <!-- Pagination Historique Mesures -->
+            <div id="measuresPagination" style="display: none; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border-card);">
+                <button type="button" class="btn-secondary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 0.8rem;" onclick="window.spaApp.prevMeasuresPage()">◀ Précédent</button>
+                <span id="measuresPageIndicator" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Page 1/1</span>
+                <button type="button" class="btn-secondary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 0.8rem;" onclick="window.spaApp.nextMeasuresPage()">Suivant ▶</button>
             </div>
             <button type="button" class="btn-danger" onclick="window.spaApp.clearHistory()" style="margin-top: 15px;">Effacer l'historique</button>
         </div>

@@ -1,23 +1,43 @@
+export const STORAGE_KEYS = {
+    HISTORY: 'spa_history',
+    PRODUCTS: 'spa_dynamic_products',
+    SETTINGS: 'spa_settings',
+    THEME: 'spa_theme'
+};
+
+export function getHistory() {
+    const data = localStorage.getItem(STORAGE_KEYS.HISTORY);
+    return data ? JSON.parse(data) : [];
+}
+
+export function getLastMeasurement() {
+    const history = getHistory();
+    return history[0] || null;
+}
+
+export function saveMeasurement(newMeasure) {
+    const history = getHistory();
+    history.unshift(newMeasure);
+    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+}
+
 export function exportData() {
     const backupObj = {};
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('spa_')) {
+        if (key?.startsWith('spa_')) {
             backupObj[key] = localStorage.getItem(key);
         }
     }
 
     const jsonString = JSON.stringify(backupObj, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const blobUrl = URL.createObjectURL(blob);
+    const blobUrl = URL.createObjectURL(new Blob([jsonString], { type: 'application/json' }));
 
     const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", blobUrl);
-    downloadAnchor.setAttribute("download", `spa_manager_backup_${new Date().toISOString().split('T')[0]}.json`);
+    downloadAnchor.href = blobUrl;
+    downloadAnchor.download = `spa_manager_backup_${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
-    
-    // Nettoyage de l'élément et de l'URL d'objet
     downloadAnchor.remove();
     URL.revokeObjectURL(blobUrl);
 }
@@ -27,46 +47,35 @@ export function importData(event) {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = (e) => {
         try {
             const parsedData = JSON.parse(e.target.result);
+            if (typeof parsedData !== 'object' || parsedData === null) throw new Error("Format JSON invalide.");
 
-            if (typeof parsedData !== 'object' || parsedData === null) {
-                throw new Error("Format JSON invalide.");
-            }
-
-            // Gestion rétrocompatible : Import par clés spa_* ou structure legacy
             let keysImported = 0;
 
             if (parsedData.measurements || parsedData.settings || parsedData.inventory) {
-                // Structure structurée legacy
-                if (parsedData.measurements) localStorage.setItem('spa_history', JSON.stringify(parsedData.measurements));
-                if (parsedData.settings) localStorage.setItem('spa_settings', JSON.stringify(parsedData.settings));
-                if (parsedData.inventory) localStorage.setItem('spa_dynamic_products', JSON.stringify(parsedData.inventory));
+                if (parsedData.measurements) localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(parsedData.measurements));
+                if (parsedData.settings) localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(parsedData.settings));
+                if (parsedData.inventory) localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(parsedData.inventory));
                 keysImported = 3;
             } else {
-                // Structure clé/valeur spa_* native
                 Object.entries(parsedData).forEach(([key, value]) => {
                     if (key.startsWith('spa_')) {
-                        const valToStore = typeof value === 'object' ? JSON.stringify(value) : value;
-                        localStorage.setItem(key, valToStore);
+                        localStorage.setItem(key, typeof value === 'object' ? JSON.stringify(value) : value);
                         keysImported++;
                     }
                 });
             }
 
-            if (keysImported === 0) {
-                throw new Error("Aucune donnée Spa Manager valide trouvée dans le fichier.");
-            }
+            if (keysImported === 0) throw new Error("Aucune donnée valide trouvée.");
 
             alert("Importation réussie des données ! L'application va se recharger.");
             window.location.reload();
-
         } catch (error) {
             console.error("Erreur d'importation :", error);
             alert("Erreur : Le fichier sélectionné est corrompu ou ne respecte pas le format de Spa Manager.");
         } finally {
-            // Réinitialiser la valeur du champ pour autoriser le re-chargement du même fichier si nécessaire
             event.target.value = '';
         }
     };
@@ -74,71 +83,45 @@ export function importData(event) {
 }
 
 export async function requestStoragePersistence() {
-    if (navigator.storage?.persist) {
-        try {
-            const isPersisted = await navigator.storage.persisted();
-            if (!isPersisted) {
-                await navigator.storage.persist();
-            }
-        } catch (err) {
-            console.error("Erreur de demande de persistance du stockage :", err);
+    try {
+        if (navigator.storage?.persist && !(await navigator.storage.persisted())) {
+            await navigator.storage.persist();
         }
+    } catch (err) {
+        console.error("Erreur de demande de persistance du stockage :", err);
     }
 }
 
 export function initTheme() {
-    const savedTheme = localStorage.getItem('spa_theme') || 'auto';
-    
+    const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME) || 'auto';
     const themeSelect = document.getElementById('themeSelect');
-    if (themeSelect) {
-        themeSelect.value = savedTheme;
-    }
+    if (themeSelect) themeSelect.value = savedTheme;
 
     applyTheme(savedTheme);
 
-    // Écoute des changements de préférence du système (mode sombre / clair)
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-        if (localStorage.getItem('spa_theme') === 'auto') {
-            applyTheme('auto');
-        }
+        if (localStorage.getItem(STORAGE_KEYS.THEME) === 'auto') applyTheme('auto');
     });
 }
 
 export function changeTheme() {
     const select = document.getElementById('themeSelect');
-    if (!select) return;
-    const theme = select.value;
-    applyTheme(theme);
+    if (select) applyTheme(select.value);
 }
 
 export function applyTheme(theme) {
     const root = document.documentElement;
-    let isDark = false;
+    const isDark = theme === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : (theme === 'dark');
 
-    if (theme === 'auto') {
-        isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    } else {
-        isDark = (theme === 'dark');
-    }
-
-    if (isDark) {
-        root.classList.add('dark-mode');
-    } else {
-        root.classList.remove('dark-mode');
-    }
-
-    localStorage.setItem('spa_theme', theme);
+    root.classList.toggle('dark-mode', isDark);
+    localStorage.setItem(STORAGE_KEYS.THEME, theme);
 }
 
 export function updateOnlineStatus() {
     const badge = document.getElementById('offlineBadge');
     if (!badge) return;
 
-    if (navigator.onLine) {
-        badge.innerText = "🌐 En ligne";
-        badge.className = "offline-badge online";
-    } else {
-        badge.innerText = "⚡ Hors-ligne";
-        badge.className = "offline-badge";
-    }
+    const isOnline = navigator.onLine;
+    badge.innerText = isOnline ? "🌐 En ligne" : "⚡ Hors-ligne";
+    badge.className = `offline-badge ${isOnline ? 'online' : ''}`;
 }
