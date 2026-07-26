@@ -99,19 +99,19 @@
         <div class="card">
             <h2>📈 Suivi graphique</h2>
             <div class="chart-selectors" id="chartSelectors">
-                <label class="chart-selector-item"><input type="checkbox" value="temp" checked onchange="window.spaApp.renderSingleChart()"> 🌡️ Temp.</label>
-                <label class="chart-selector-item"><input type="checkbox" value="ph" checked onchange="window.spaApp.renderSingleChart()"> 🧪 pH</label>
-                <label class="chart-selector-item"><input type="checkbox" value="chlLibre" checked onchange="window.spaApp.renderSingleChart()"> ✨ Cl. Libre</label>
-                <label class="chart-selector-item"><input type="checkbox" value="chlTotal" onchange="window.spaApp.renderSingleChart()"> 🧪 Cl. Total</label>
-                <label class="chart-selector-item"><input type="checkbox" value="tac" checked onchange="window.spaApp.renderSingleChart()"> ⚖️ TAC</label>
-                <label class="chart-selector-item"><input type="checkbox" value="stab" onchange="window.spaApp.renderSingleChart()"> 🛡️ Stab.</label>
-                <label class="chart-selector-item"><input type="checkbox" value="th" onchange="window.spaApp.renderSingleChart()"> 💎 TH</label>
+                <label class="chart-selector-item"><input type="checkbox" value="temp" checked onchange="window.spaApp.renderMultiMetricsCharts()"> 🌡️ Temp.</label>
+                <label class="chart-selector-item"><input type="checkbox" value="ph" checked onchange="window.spaApp.renderMultiMetricsCharts()"> 🧪 pH</label>
+                <label class="chart-selector-item"><input type="checkbox" value="chlLibre" checked onchange="window.spaApp.renderMultiMetricsCharts()"> ✨ Cl. Libre</label>
+                <label class="chart-selector-item"><input type="checkbox" value="chlTotal" onchange="window.spaApp.renderMultiMetricsCharts()"> 🧪 Cl. Total</label>
+                <label class="chart-selector-item"><input type="checkbox" value="tac" checked onchange="window.spaApp.renderMultiMetricsCharts()"> ⚖️ TAC</label>
+                <label class="chart-selector-item"><input type="checkbox" value="stab" onchange="window.spaApp.renderMultiMetricsCharts()"> 🛡️ Stab.</label>
+                <label class="chart-selector-item"><input type="checkbox" value="th" onchange="window.spaApp.renderMultiMetricsCharts()"> 💎 TH</label>
             </div>
             <div style="display: flex; gap: 6px; margin-bottom: 12px;">
-                <button type="button" onclick="window.spaApp.setChartFilter(7)" class="btn-filter" id="filter-7">7j</button>
-                <button type="button" onclick="window.spaApp.setChartFilter(15)" class="btn-filter" id="filter-15">15j</button>
-                <button type="button" onclick="window.spaApp.setChartFilter(30)" class="btn-filter" id="filter-30">30j</button>
-                <button type="button" onclick="window.spaApp.setChartFilter(0)" class="btn-filter active-filter" id="filter-0">Tout</button>
+                <button type="button" onclick="window.spaApp.updateChartTimeFilter(7)" class="btn-filter" id="filter-7">7j</button>
+                <button type="button" onclick="window.spaApp.updateChartTimeFilter(15)" class="btn-filter" id="filter-15">15j</button>
+                <button type="button" onclick="window.spaApp.updateChartTimeFilter(30)" class="btn-filter" id="filter-30">30j</button>
+                <button type="button" onclick="window.spaApp.updateChartTimeFilter(0)" class="btn-filter active-filter" id="filter-0">Tout</button>
             </div>
             <div class="chart-container"><canvas id="unifiedChart"></canvas></div>
         </div>
@@ -130,7 +130,7 @@
                 <span id="measuresPageIndicator" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Page 1/1</span>
                 <button type="button" class="btn-secondary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 0.8rem;" onclick="window.spaApp.nextMeasuresPage()">Suivant ▶</button>
             </div>
-            <button type="button" class="btn-danger" onclick="window.spaApp.clearHistory()" style="margin-top: 15px;">Effacer l'historique</button>
+            <button type="button" class="btn-danger" onclick="window.spaApp.wipeHistoryData()" style="margin-top: 15px;">Effacer l'historique</button>
         </div>
     </div>
 
@@ -204,8 +204,8 @@
             <h2>🧽 Tâches d'entretien</h2>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0;">Planifiez vos fréquences de nettoyage et de suivi.</p>
             <div id="maintenanceContainer"></div>
-            <button type="button" class="btn-success" onclick="window.spaApp.openAddTaskModal()" style="margin-top: 8px;">+ Ajouter une tâche</button>
-            <button type="button" onclick="window.spaApp.saveMaintenanceSettings()" style="margin-top: 8px;">Sauvegarder la planification</button>
+            <button type="button" class="btn-success" onclick="window.spaApp.displayAddTaskModal()" style="margin-top: 8px;">+ Ajouter une tâche</button>
+            <button type="button" onclick="window.spaApp.saveMaintenanceTasksFromDOM()" style="margin-top: 8px;">Sauvegarder la planification</button>
         </div>
     </div>
 
@@ -215,11 +215,11 @@
             <h2>Spa & Traitement</h2>
             <div class="form-group">
                 <label for="vol">Volume d'eau du Spa (m³)</label>
-                <input type="number" inputmode="decimal" id="vol" value="1.5" step="0.1" oninput="window.spaApp.saveTargets()">
+                <input type="number" inputmode="decimal" id="vol" value="1.5" step="0.1" oninput="window.spaApp.saveSettingsAndInventory()">
             </div>
             <div class="form-group">
                 <label for="disinfectantType">Type de désinfectant principal</label>
-                <select id="disinfectantType" onchange="window.spaApp.toggleDisinfectantOptions(); window.spaApp.saveTargets();">
+                <select id="disinfectantType" onchange="window.spaApp.toggleDisinfectantOptions(); window.spaApp.saveSettingsAndInventory();">
                     <option value="chlore">Chlore</option>
                     <option value="brome">Brome</option>
                     <option value="oxygene">Oxygène Actif</option>
@@ -234,90 +234,90 @@
             <!-- Température -->
             <div class="checkbox-group">
                 <label for="enableTemp">🌡️ Température</label>
-                <input type="checkbox" id="enableTemp" onchange="window.spaApp.toggleTargetVisibility(); window.spaApp.saveTargets();">
+                <input type="checkbox" id="enableTemp" onchange="window.spaApp.toggleSettingsInputVisibility(); window.spaApp.saveSettingsAndInventory();">
             </div>
 
             <!-- pH -->
             <div class="checkbox-group">
                 <label for="enablePh">🧪 pH</label>
-                <input type="checkbox" id="enablePh" onchange="window.spaApp.toggleTargetVisibility(); window.spaApp.saveTargets();">
+                <input type="checkbox" id="enablePh" onchange="window.spaApp.toggleSettingsInputVisibility(); window.spaApp.saveSettingsAndInventory();">
             </div>
             <div id="targetPhContainer" class="form-group">
                 <label>Plage pH idéale</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="number" inputmode="decimal" id="phTargetMin" placeholder="Min (ex: 7.2)" step="0.1" oninput="window.spaApp.saveTargets()">
+                    <input type="number" inputmode="decimal" id="phTargetMin" placeholder="Min (ex: 7.2)" step="0.1" oninput="window.spaApp.saveSettingsAndInventory()">
                     <span>à</span>
-                    <input type="number" inputmode="decimal" id="phTargetMax" placeholder="Max (ex: 7.6)" step="0.1" oninput="window.spaApp.saveTargets()">
+                    <input type="number" inputmode="decimal" id="phTargetMax" placeholder="Max (ex: 7.6)" step="0.1" oninput="window.spaApp.saveSettingsAndInventory()">
                 </div>
             </div>
 
             <!-- Chlore libre -->
             <div class="checkbox-group">
                 <label for="enableChlLibre">💧 Chlore libre (ppm)</label>
-                <input type="checkbox" id="enableChlLibre" onchange="window.spaApp.toggleTargetVisibility(); window.spaApp.saveTargets();">
+                <input type="checkbox" id="enableChlLibre" onchange="window.spaApp.toggleSettingsInputVisibility(); window.spaApp.saveSettingsAndInventory();">
             </div>
             <div id="targetChlLibreContainer" class="form-group">
                 <label>Plage Chlore libre (ppm)</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="number" inputmode="decimal" id="chlLibreTargetMin" placeholder="Min (ex: 2.0)" step="0.5" oninput="window.spaApp.saveTargets()">
+                    <input type="number" inputmode="decimal" id="chlLibreTargetMin" placeholder="Min (ex: 2.0)" step="0.5" oninput="window.spaApp.saveSettingsAndInventory()">
                     <span>à</span>
-                    <input type="number" inputmode="decimal" id="chlLibreTargetMax" placeholder="Max (ex: 4.0)" step="0.5" oninput="window.spaApp.saveTargets()">
+                    <input type="number" inputmode="decimal" id="chlLibreTargetMax" placeholder="Max (ex: 4.0)" step="0.5" oninput="window.spaApp.saveSettingsAndInventory()">
                 </div>
             </div>
 
             <!-- Chlore total -->
             <div class="checkbox-group">
                 <label for="enableChlTotal">🧪 Chlore total (ppm)</label>
-                <input type="checkbox" id="enableChlTotal" onchange="window.spaApp.toggleTargetVisibility(); window.spaApp.saveTargets();">
+                <input type="checkbox" id="enableChlTotal" onchange="window.spaApp.toggleSettingsInputVisibility(); window.spaApp.saveSettingsAndInventory();">
             </div>
             <div id="targetChlTotalContainer" class="form-group">
                 <label>Plage Chlore total (ppm)</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="number" inputmode="decimal" id="chlTotalTargetMin" placeholder="Min (ex: 2.0)" step="0.5" oninput="window.spaApp.saveTargets()">
+                    <input type="number" inputmode="decimal" id="chlTotalTargetMin" placeholder="Min (ex: 2.0)" step="0.5" oninput="window.spaApp.saveSettingsAndInventory()">
                     <span>à</span>
-                    <input type="number" inputmode="decimal" id="chlTotalTargetMax" placeholder="Max (ex: 4.5)" step="0.5" oninput="window.spaApp.saveTargets()">
+                    <input type="number" inputmode="decimal" id="chlTotalTargetMax" placeholder="Max (ex: 4.5)" step="0.5" oninput="window.spaApp.saveSettingsAndInventory()">
                 </div>
             </div>
 
             <!-- TAC -->
             <div class="checkbox-group">
                 <label for="enableTac">🛡️ Alcalinité totale (TAC)</label>
-                <input type="checkbox" id="enableTac" onchange="window.spaApp.toggleTargetVisibility(); window.spaApp.saveTargets();">
+                <input type="checkbox" id="enableTac" onchange="window.spaApp.toggleSettingsInputVisibility(); window.spaApp.saveSettingsAndInventory();">
             </div>
             <div id="targetTacContainer" class="form-group">
                 <label>Plage TAC idéale (ppm)</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="number" inputmode="decimal" id="tacTargetMin" placeholder="Min (ex: 80)" step="5" oninput="window.spaApp.saveTargets()">
+                    <input type="number" inputmode="decimal" id="tacTargetMin" placeholder="Min (ex: 80)" step="5" oninput="window.spaApp.saveSettingsAndInventory()">
                     <span>à</span>
-                    <input type="number" inputmode="decimal" id="tacTargetMax" placeholder="Max (ex: 120)" step="5" oninput="window.spaApp.saveTargets()">
+                    <input type="number" inputmode="decimal" id="tacTargetMax" placeholder="Max (ex: 120)" step="5" oninput="window.spaApp.saveSettingsAndInventory()">
                 </div>
             </div>
 
             <!-- Stabilisant -->
             <div class="checkbox-group">
                 <label for="enableStab">☀️ Stabilisant (ppm)</label>
-                <input type="checkbox" id="enableStab" onchange="window.spaApp.toggleTargetVisibility(); window.spaApp.saveTargets();">
+                <input type="checkbox" id="enableStab" onchange="window.spaApp.toggleSettingsInputVisibility(); window.spaApp.saveSettingsAndInventory();">
             </div>
             <div id="targetStabContainer" class="form-group">
                 <label>Plage Stabilisant (ppm)</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="number" inputmode="decimal" id="stabTargetMin" placeholder="Min (ex: 20)" step="5" oninput="window.spaApp.saveTargets()">
+                    <input type="number" inputmode="decimal" id="stabTargetMin" placeholder="Min (ex: 20)" step="5" oninput="window.spaApp.saveSettingsAndInventory()">
                     <span>à</span>
-                    <input type="number" inputmode="decimal" id="stabTargetMax" placeholder="Max (ex: 50)" step="5" oninput="window.spaApp.saveTargets()">
+                    <input type="number" inputmode="decimal" id="stabTargetMax" placeholder="Max (ex: 50)" step="5" oninput="window.spaApp.saveSettingsAndInventory()">
                 </div>
             </div>
 
             <!-- TH -->
             <div class="checkbox-group">
                 <label for="enableTh">💧 Dureté totale (TH)</label>
-                <input type="checkbox" id="enableTh" onchange="window.spaApp.toggleTargetVisibility(); window.spaApp.saveTargets();">
+                <input type="checkbox" id="enableTh" onchange="window.spaApp.toggleSettingsInputVisibility(); window.spaApp.saveSettingsAndInventory();">
             </div>
             <div id="targetThContainer" class="form-group">
                 <label>Plage TH idéale (ppm)</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="number" inputmode="decimal" id="thTargetMin" placeholder="Min (ex: 150)" step="10" oninput="window.spaApp.saveTargets()">
+                    <input type="number" inputmode="decimal" id="thTargetMin" placeholder="Min (ex: 150)" step="10" oninput="window.spaApp.saveSettingsAndInventory()">
                     <span>à</span>
-                    <input type="number" inputmode="decimal" id="thTargetMax" placeholder="Max (ex: 250)" step="10" oninput="window.spaApp.saveTargets()">
+                    <input type="number" inputmode="decimal" id="thTargetMax" placeholder="Max (ex: 250)" step="10" oninput="window.spaApp.saveSettingsAndInventory()">
                 </div>
             </div>
         </div>
@@ -326,7 +326,7 @@
             <h2>🎨 Apparence & Notifications</h2>
             <div class="form-group">
                 <label for="themeSelect">Thème visuel</label>
-                <select id="themeSelect" onchange="window.spaApp.changeTheme()">
+                <select id="themeSelect" onchange="window.spaApp.applyTheme()">
                     <option value="auto">Automatique (Système)</option>
                     <option value="light">Mode Clair</option>
                     <option value="dark">Mode Sombre</option>
@@ -353,7 +353,7 @@
                 <button type="button" class="btn-secondary" onclick="document.getElementById('importFile').click()" style="margin:0;">📤 Importer</button>
                 <input type="file" id="importFile" style="display: none;" accept=".json" onchange="window.spaApp.importData(event)">
             </div>
-            <button type="button" class="btn-danger" onclick="window.spaApp.clearHistory()" style="margin-top: 15px;">Réinitialiser toutes les données</button>
+            <button type="button" class="btn-danger" onclick="window.spaApp.wipeHistoryData()" style="margin-top: 15px;">Réinitialiser toutes les données</button>
         </div>
     </div>
 </div>

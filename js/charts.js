@@ -21,7 +21,7 @@ const CHART_DEFINITIONS = {
     th: { label: '💎 Dureté (TH)', color: '#3b82f6', dataKey: 'th' }
 };
 
-export function setChartFilter(days, renderCallback) {
+export function updateChartTimeFilter(days, renderCallback) {
     currentChartDays = days;
     document.querySelectorAll('.btn-filter').forEach(btn => {
         const isActive = btn.id === `filter-${days}`;
@@ -32,7 +32,7 @@ export function setChartFilter(days, renderCallback) {
     renderCallback?.();
 }
 
-export function renderHistory() {
+export function renderHistoryTable() {
     const headerRow = document.getElementById('historyTableHeader');
     const tbody = document.querySelector('#historyTable tbody');
     const paginationEl = document.getElementById('measuresPagination');
@@ -67,16 +67,16 @@ export function renderHistory() {
     }
 }
 
-export function clearHistory(callback) {
+export function wipeHistoryData(callback) {
     if (confirm("Attention : cela effacera tout l'historique des mesures.")) {
         localStorage.removeItem('spa_history');
-        renderHistory();
-        renderSingleChart();
+        renderHistoryTable();
+        renderMultiMetricsCharts();
         callback?.();
     }
 }
 
-export function renderSingleChart() {
+export function renderMultiMetricsCharts() {
     const container = document.querySelector('.chart-container');
     if (!container) return;
 
@@ -111,6 +111,7 @@ export function renderSingleChart() {
         .map(chk => CHART_DEFINITIONS[chk.value]);
 
     if (activeDefs.length === 0) {
+        container.style.height = 'auto';
         container.innerHTML = `<p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px;">Aucun paramètre sélectionné.</p>`;
         return;
     }

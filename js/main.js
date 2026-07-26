@@ -1,7 +1,7 @@
-import { exportData, importData, requestStoragePersistence, initTheme, changeTheme, updateOnlineStatus, getLastMeasurement } from './storage.js';
-import { loadTargets, saveTargets, toggleTargetVisibility, toggleDisinfectantOptions, onProductTypeChange, addNewProductRow, buildDynamicMeasuresForm, computeDose, renderInventory, updateLSIUI, updateBiologicalStatusUI, updateGlobalHeaderStatus } from './calculator.js';
-import { renderMaintenanceTasks, saveMaintenanceSettings, markTaskDone, openAddTaskModal, confirmAddTask, onPresetChange, requestNotificationPermission, checkMaintenanceAlerts } from './maintenance.js';
-import { setChartFilter, renderHistory, clearHistory, renderSingleChart } from './charts.js';
+import { exportBackupToJSON, importBackupFromJSON, requestStoragePersistence, initTheme, applyTheme, updateOnlineStatus, getLastMeasurement, loadSettingsAndInventory, saveSettingsAndInventory } from './storage.js';
+import { toggleSettingsInputVisibility, syncSaltElectrolysisWithDisinfectant, updateProductRowLabelsOnTypeChange, addNewProductRow, buildDynamicMeasuresForm, computeDose, renderInventory, updateLSIUI, updateBiologicalStatusUI, updateGlobalHeaderStatus } from './calculator.js';
+import { renderMaintenanceTaskList, saveMaintenanceTasksFromDOM, markMaintenanceTaskAsCompleted, displayAddTaskModal, validateAndAddNewTask, handleMaintenancePresetSelection, requestNotificationPermission, evaluateAndTriggerMaintenanceAlerts } from './maintenance.js';
+import { updateChartTimeFilter, renderHistoryTable, wipeHistoryData, renderMultiMetricsCharts } from './charts.js';
 
 // --- ÉTAT DE NAVIGATION & PAGINATION ---
 let currentTreatmentPage = 1;
@@ -71,16 +71,15 @@ window.onload = function() {
     localStorage.removeItem('spa_last_measurements');
 
     if (!localStorage.getItem('spa_initialized')) {
-        saveTargets();
         localStorage.setItem('spa_initialized', 'true');
     }
     
-    loadTargets();
+    loadSettingsAndInventory();
 
     buildDynamicMeasuresForm();
-    renderMaintenanceTasks();
+    renderMaintenanceTaskList();
     renderTreatmentLogs();
-    checkMaintenanceAlerts();
+    evaluateAndTriggerMaintenanceAlerts();
 
     if (localStorage.getItem('spa_results_visible') === 'block') {
         restoreLastResults();
@@ -118,7 +117,6 @@ function switchPage(pageId, title, element) {
     if (targetPage) targetPage.classList.add('active');
     if (element) element.classList.add('active');
     
-    // Correction : Utilisation de la classe .app-title présente dans le HTML d'origine
     const headerTitle = document.querySelector('.app-title');
     if (headerTitle && title) headerTitle.innerText = title;
 
@@ -127,11 +125,11 @@ function switchPage(pageId, title, element) {
             buildDynamicMeasuresForm();
             break;
         case 'charts':
-            renderSingleChart();
-            renderHistory();
+            renderMultiMetricsCharts();
+            renderHistoryTable();
             break;
         case 'maintenance':
-            renderMaintenanceTasks();
+            renderMaintenanceTaskList();
             refreshGlobalUI();
             break;
         case 'treatment':
@@ -245,12 +243,10 @@ export function calculateAndSave() {
             const saltProduct = savedProducts.find(p => p.type === 'salt_electrolysis');
             const spaVol = parseFloat(localStorage.getItem('spa_vol')) || 1.5;
             
-            // 1. Calcul de la masse de sel en grammes (ex: m / d * diff * volume)
             const calcSalt = saltProduct && saltProduct.d > 0 
                 ? Math.round((saltProduct.m / saltProduct.d) * diffChl * spaVol) 
                 : Math.round(500 * diffChl);
             
-            // 2. Calcul du temps d'électrolyse en heures (ex: temps de base v ajusté selon le delta et le volume)
             const baseHours = saltProduct ? parseFloat(saltProduct.v) || 2.0 : 2.0;
             const baseDelta = saltProduct ? parseFloat(saltProduct.d) || 1.0 : 1.0;
             
@@ -258,7 +254,7 @@ export function calculateAndSave() {
             if (baseDelta > 0) {
                 calcHours = Math.round((baseHours / baseDelta) * diffChl * spaVol * 10) / 10;
             }
-            if (calcHours <= 0) calcHours = 0.5; // Minimum d'affichage si l'écart est infime
+            if (calcHours <= 0) calcHours = 0.5;
 
             const saltAdvice = `Ajouter ${calcSalt}g de sel, puis lancer l'électrolyse pendant ${calcHours}h`;
             stepsHTML += generateStepHTML(3, `Traitement Sel & Électrolyse`, 'salt_electrolysis', 'Électrolyseur / Sel', diffChl, saltAdvice, { value: calcSalt, unit: 'g' });
@@ -361,7 +357,6 @@ function validateAppliedTreatment() {
         localStorage.setItem('spa_treatment_logs', JSON.stringify(treatmentLogs));
         renderTreatmentLogs();
 
-        // Mettre à jour la note de la dernière mesure
         const history = JSON.parse(localStorage.getItem('spa_history') || '[]');
         if (history.length > 0) {
             const noteText = "Traitement appliqué : " + treatmentSummary;
@@ -389,7 +384,7 @@ function changePage(direction, type) {
         renderTreatmentLogs();
     } else {
         window.currentMeasuresPage = Math.max(1, Math.min(totalPages, window.currentMeasuresPage + direction));
-        renderHistory();
+        renderHistoryTable();
     }
 }
 
@@ -426,23 +421,25 @@ window.spaApp = {
     switchPage,
     calculateAndSave,
     validateAppliedTreatment,
-    saveTargets,
-    toggleTargetVisibility,
-    toggleDisinfectantOptions,
-    onProductTypeChange,
+    loadSettingsAndInventory, 
+    saveSettingsAndInventory,
+    toggleSettingsInputVisibility, 
+    syncSaltElectrolysisWithDisinfectant,
+    updateProductRowLabelsOnTypeChange,
     addNewProductRow,
-    changeTheme,
+    renderInventory,
+    applyTheme,
     requestNotificationPermission,
-    exportData,
-    importData,
-    clearHistory: () => clearHistory(renderHistory),
-    setChartFilter: (days) => setChartFilter(days, renderSingleChart),
-    renderSingleChart,
-    saveMaintenanceSettings,
-    markTaskDone,
-    openAddTaskModal,
-    confirmAddTask,
-    onPresetChange,
+    exportBackupToJSON,
+    importBackupFromJSON,
+    wipeHistoryData: () => wipeHistoryData(renderHistoryTable),
+    updateChartTimeFilter: (days) => updateChartTimeFilter(days, renderMultiMetricsCharts),
+    renderMultiMetricsCharts,
+    saveMaintenanceTasksFromDOM,
+    markMaintenanceTaskAsCompleted,
+    displayAddTaskModal,
+    validateAndAddNewTask,
+    handleMaintenancePresetSelection,
     installPWA,
     nextTreatmentPage: () => changePage(1, 'treatment'),
     prevTreatmentPage: () => changePage(-1, 'treatment'),

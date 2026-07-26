@@ -23,7 +23,7 @@ export function getMaintenanceTasks() {
     ];
 }
 
-export function renderMaintenanceTasks() {
+export function renderMaintenanceTaskList() {
     const tasks = getMaintenanceTasks();
     const container = document.getElementById('maintenanceContainer');
     if (!container) return;
@@ -56,18 +56,18 @@ export function renderMaintenanceTasks() {
             <div class="task-card" data-index="${index}" data-lastdone="${task.lastDone || ''}">
                 <div class="task-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <label class="task-title" style="display: flex; align-items: center; gap: 8px; flex: 1; margin: 0;">
-                        <input type="checkbox" class="task-en" ${task.enabled ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: var(--primary);" onchange="window.spaApp.saveMaintenanceSettings()"> 
-                        <input type="text" class="task-name" value="${task.name}" placeholder="Nom de la tâche" style="font-weight: 600; padding: 6px 10px; font-size: 0.9rem;" onchange="window.spaApp.saveMaintenanceSettings()">
+                        <input type="checkbox" class="task-en" ${task.enabled ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: var(--primary);" onchange="window.spaApp.saveMaintenanceTasksFromDOM()"> 
+                        <input type="text" class="task-name" value="${task.name}" placeholder="Nom de la tâche" style="font-weight: 600; padding: 6px 10px; font-size: 0.9rem;" onchange="window.spaApp.saveMaintenanceTasksFromDOM()">
                     </label>
-                    <button type="button" class="btn-danger" style="width: auto; padding: 6px 10px; margin: 0; font-size: 0.8rem;" onclick="this.closest('.task-card').remove(); window.spaApp.saveMaintenanceSettings();">❌</button>
+                    <button type="button" class="btn-danger" style="width: auto; padding: 6px 10px; margin: 0; font-size: 0.8rem;" onclick="this.closest('.task-card').remove(); window.spaApp.saveMaintenanceTasksFromDOM();">❌</button>
                 </div>
                 ${statusHTML}
                 <div class="grid" style="align-items: end; margin-top: 8px;">
                     <div class="form-group" style="margin:0;">
                         <label>Intervalle (Jours)</label>
-                        <input type="number" inputmode="decimal" class="task-int" value="${task.intervalDays}" min="1" onchange="window.spaApp.saveMaintenanceSettings()">
+                        <input type="number" inputmode="decimal" class="task-int" value="${task.intervalDays}" min="1" onchange="window.spaApp.saveMaintenanceTasksFromDOM()">
                     </div>
-                    <button type="button" class="btn-success" onclick="window.spaApp.markTaskDone(${index})" ${!task.enabled ? 'disabled' : ''}>Marquer Fait</button>
+                    <button type="button" class="btn-success" onclick="window.spaApp.markMaintenanceTaskAsCompleted(${index})" ${!task.enabled ? 'disabled' : ''}>Marquer Fait</button>
                 </div>
             </div>
         `;
@@ -76,7 +76,7 @@ export function renderMaintenanceTasks() {
     container.innerHTML = cardsHTML;
 }
 
-export function addNewTaskRow(taskData = null) {
+export function appendNewTaskToStorage(taskData = null) {
     const tasks = getMaintenanceTasks();
     tasks.push({
         name: taskData?.name || 'Nouvelle tâche',
@@ -85,10 +85,10 @@ export function addNewTaskRow(taskData = null) {
         lastDone: taskData?.lastDone || null
     });
     localStorage.setItem('spa_maintenance', JSON.stringify(tasks));
-    renderMaintenanceTasks();
+    renderMaintenanceTaskList();
 }
 
-export function openAddTaskModal() {
+export function displayAddTaskModal() {
     let modalOverlay = document.getElementById('taskModalOverlay');
     if (!modalOverlay) {
         modalOverlay = document.createElement('div');
@@ -110,7 +110,7 @@ export function openAddTaskModal() {
                 
                 <div class="form-group">
                     <label for="modalTaskPreset">Modèle prédéfini</label>
-                    <select id="modalTaskPreset" onchange="window.spaApp.onPresetChange()">
+                    <select id="modalTaskPreset" onchange="window.spaApp.handleMaintenancePresetSelection()">
                         <option value="custom">-- Tâche personnalisée --</option>
                         ${optionsHtml}
                     </select>
@@ -128,7 +128,7 @@ export function openAddTaskModal() {
 
                 <div style="display: flex; gap: 8px; margin-top: 16px;">
                     <button class="btn-secondary" type="button" onclick="document.getElementById('taskModalOverlay').style.display='none'">Annuler</button>
-                    <button type="button" onclick="window.spaApp.confirmAddTask()">Ajouter</button>
+                    <button type="button" onclick="window.spaApp.validateAndAddNewTask()">Ajouter</button>
                 </div>
             </div>
         `;
@@ -141,7 +141,7 @@ export function openAddTaskModal() {
     }
 }
 
-export function onPresetChange() {
+export function handleMaintenancePresetSelection() {
     const presetVal = document.getElementById('modalTaskPreset').value;
     const nameInput = document.getElementById('modalTaskName');
     const intInput = document.getElementById('modalTaskInterval');
@@ -158,7 +158,7 @@ export function onPresetChange() {
     }
 }
 
-export function confirmAddTask() {
+export function validateAndAddNewTask() {
     const nameInput = document.getElementById('modalTaskName');
     const intInput = document.getElementById('modalTaskInterval');
 
@@ -170,11 +170,11 @@ export function confirmAddTask() {
         return;
     }
 
-    addNewTaskRow({ name, enabled: true, intervalDays, lastDone: null });
+    appendNewTaskToStorage({ name, enabled: true, intervalDays, lastDone: null });
     document.getElementById('taskModalOverlay').style.display = 'none';
 }
 
-export function saveMaintenanceSettings() {
+export function saveMaintenanceTasksFromDOM() {
     const taskCards = document.querySelectorAll('#maintenanceContainer .task-card');
     const existingTasks = getMaintenanceTasks();
     const tasks = [];
@@ -198,15 +198,15 @@ export function saveMaintenanceSettings() {
     });
 
     localStorage.setItem('spa_maintenance', JSON.stringify(tasks));
-    renderMaintenanceTasks();
+    renderMaintenanceTaskList();
 }
 
-export function markTaskDone(index) {
+export function markMaintenanceTaskAsCompleted(index) {
     const tasks = getMaintenanceTasks();
     if (tasks[index]) {
         tasks[index].lastDone = new Date().getTime();
         localStorage.setItem('spa_maintenance', JSON.stringify(tasks));
-        renderMaintenanceTasks();
+        renderMaintenanceTaskList();
     }
 }
 
@@ -218,14 +218,14 @@ export function requestNotificationPermission() {
     Notification.requestPermission().then(permission => {
         if (permission === 'granted') {
             alert("Notifications activées avec succès !");
-            checkMaintenanceAlerts(true);
+            evaluateAndTriggerMaintenanceAlerts(true);
         } else {
             alert("Permission refusée pour les notifications.");
         }
     });
 }
 
-export function checkMaintenanceAlerts(forceTest = false) {
+export function evaluateAndTriggerMaintenanceAlerts(forceTest = false) {
     const tasks = getMaintenanceTasks();
     const now = new Date().getTime();
     
