@@ -163,14 +163,16 @@ export function loadTargets() {
 
     ['Temp', 'Ph', 'ChlLibre', 'ChlTotal', 'Tac', 'Stab', 'Th'].forEach(param => {
         const checkbox = document.getElementById(`enable${param}`);
-        if (checkbox) checkbox.checked = localStorage.getItem(`spa_enable${param}`) !== 'false';
-    });
-
-    ['ph', 'tac', 'chlLibre', 'chlTotal', 'stab', 'th'].forEach(param => {
-        const minEl = document.getElementById(`${param}TargetMin`);
-        const maxEl = document.getElementById(`${param}TargetMax`);
-        if (minEl) minEl.value = localStorage.getItem(`spa_${param}TargetMin`) ?? DEFAULT_RANGES[param]?.min ?? '';
-        if (maxEl) maxEl.value = localStorage.getItem(`spa_${param}TargetMax`) ?? DEFAULT_RANGES[param]?.max ?? '';
+        if (checkbox) {
+            const savedValue = localStorage.getItem(`spa_enable${param}`);
+            // Si la clé n'existe pas encore, on coche par défaut, sinon on convertit explicitement la chaîne en booléen
+            if (savedValue === null) {
+                checkbox.checked = true;
+                localStorage.setItem(`spa_enable${param}`, 'true');
+            } else {
+                checkbox.checked = (savedValue === 'true');
+            }
+        }
     });
 
     const container = document.getElementById('dynamicProductsList');

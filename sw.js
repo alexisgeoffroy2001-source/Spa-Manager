@@ -1,4 +1,4 @@
-const CACHE_NAME = 'spa-manager-v48';
+const CACHE_NAME = 'spa-manager-v49';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
