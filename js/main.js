@@ -73,9 +73,9 @@ window.onload = function() {
     if (!localStorage.getItem('spa_initialized')) {
         saveTargets();
         localStorage.setItem('spa_initialized', 'true');
-    } else {
-        loadTargets();
     }
+    
+    loadTargets();
 
     buildDynamicMeasuresForm();
     renderMaintenanceTasks();
