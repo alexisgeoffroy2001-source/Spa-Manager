@@ -161,18 +161,18 @@ export function loadTargets() {
 
     toggleDisinfectantOptions();
 
-    // Restauration stricte des cases à cocher
+    // Restauration robuste et explicite des cases à cocher de l'onglet Réglages
     ['Temp', 'Ph', 'ChlLibre', 'ChlTotal', 'Tac', 'Stab', 'Th'].forEach(param => {
         const checkbox = document.getElementById(`enable${param}`);
         if (checkbox) {
             const savedValue = localStorage.getItem(`spa_enable${param}`);
-            if (savedValue !== null) {
-                // On applique exactement ce qui est stocké ("true" ou "false")
-                checkbox.checked = (savedValue === 'true');
-            } else {
-                // Par défaut si rien n'est enregistré
-                checkbox.checked = true;
+            if (savedValue === null) {
+                // Par défaut à la toute première ouverture : tout cocher sauf ChlTotal et Stab si souhaité, ou tout cocher
+                checkbox.checked = true; 
                 localStorage.setItem(`spa_enable${param}`, 'true');
+            } else {
+                // Conversion stricte de la chaîne stockée en booléen
+                checkbox.checked = (savedValue === 'true');
             }
         }
     });
