@@ -1,11 +1,13 @@
+import { getOrEstimateLSI, getConsecutiveLowCount } from './calculator.js';
+
 let subChartsInstances = [];
 let currentChartDays = 0;
 
 const HISTORY_COLUMNS = [
     { id: 'Temp', label: '🌡️ T°', key: 'temp' }, 
-    { id: 'Ph', label: '🧪 pH', key: 'ph' },
+    { id: 'Ph', label: '🍋 pH', key: 'ph' },
     { id: 'ChlLibre', label: '✨ Cl. Libre', key: 'chlLibre' }, 
-    { id: 'ChlTotal', label: '🧪 Cl. Total', key: 'chlTotal' }, 
+    { id: 'ChlTotal', label: '🔬 Cl. Total', key: 'chlTotal' }, 
     { id: 'Tac', label: '⚖️ TAC', key: 'tac' }, 
     { id: 'Stab', label: '🛡️ Stab', key: 'stab' },
     { id: 'Th', label: '💎 TH', key: 'th' }
@@ -13,13 +15,118 @@ const HISTORY_COLUMNS = [
 
 const CHART_DEFINITIONS = {
     temp: { label: '🌡️ Température (°C)', color: '#f97316', dataKey: 'temp' },
-    ph: { label: '🧪 pH', color: '#0284c7', dataKey: 'ph' },
+    ph: { label: '🍋 pH', color: '#0284c7', dataKey: 'ph' },
     chlLibre: { label: '✨ Chlore libre', color: '#f59e0b', dataKey: 'chlLibre' },
-    chlTotal: { label: '🧪 Chlore total', color: '#d97706', dataKey: 'chlTotal' },
+    chlTotal: { label: '🔬 Chlore total', color: '#d97706', dataKey: 'chlTotal' },
     tac: { label: '⚖️ Alcalinité (TAC)', color: '#10b981', dataKey: 'tac' },
     stab: { label: '🛡️ Stabilisant', color: '#8b5cf6', dataKey: 'stab' },
     th: { label: '💎 Dureté (TH)', color: '#3b82f6', dataKey: 'th' }
 };
+
+// --- GESTION DES JAUGUES ET UI ---
+
+export function updateLSIUI(measurements) {
+    const cursor = document.getElementById('lsiGaugeCursor');
+    const textDisplay = document.getElementById('lsiHeaderValue');
+    if (!cursor) return;
+
+    const lsi = getOrEstimateLSI(measurements);
+    if (lsi === null || isNaN(lsi)) {
+        cursor.style.left = '50%';
+        cursor.style.backgroundColor = '#9ca3af';
+        if (textDisplay) textDisplay.innerText = "LSI : --";
+        return;
+    }
+
+    const percent = ((Math.max(-1, Math.min(1, lsi)) + 1) / 2) * 100;
+    cursor.style.left = `${percent}%`;
+    cursor.style.backgroundColor = lsi < -0.3 ? '#ef4444' : (lsi > 0.3 ? '#f59e0b' : '#10b981');
+
+    if (textDisplay) {
+        textDisplay.innerText = `LSI : ${lsi > 0 ? '+' : ''}${lsi.toFixed(2)}`;
+    }
+}
+
+export function updateBiologicalStatusUI(measurements) {
+    const cursor = document.getElementById('bioGaugeCursor');
+    const textDisplay = document.getElementById('bioGaugeValue');
+    const alertBanner = document.getElementById('biofilmAlertBanner');
+    if (!cursor) return;
+
+    const { currentCl, count: consecutiveLowCount } = getConsecutiveLowCount(measurements);
+    const historyLength = JSON.parse(localStorage.getItem('spa_history') || '[]').length;
+
+    if (isNaN(currentCl) && historyLength === 0) {
+        cursor.style.left = '16.6%';
+        cursor.style.backgroundColor = '#9ca3af';
+        if (textDisplay) textDisplay.innerText = "Charge bactérienne : Données insuffisantes";
+        if (alertBanner) alertBanner.style.display = 'none';
+        return;
+    }
+
+    if (consecutiveLowCount >= 2 || (currentCl === 0 && consecutiveLowCount >= 1)) {
+        cursor.style.left = '83.3%';
+        cursor.style.backgroundColor = '#ef4444';
+        if (textDisplay) textDisplay.innerText = "Charge bactérienne : ÉLEVÉE (Risque Biofilm)";
+        if (alertBanner) alertBanner.style.display = 'block';
+    } else if (consecutiveLowCount === 1) {
+        cursor.style.left = '50%';
+        cursor.style.backgroundColor = '#f59e0b';
+        if (textDisplay) textDisplay.innerText = "Charge bactérienne : Vigilance (Sous-dosage récent)";
+        if (alertBanner) alertBanner.style.display = 'none';
+    } else {
+        cursor.style.left = '16.6%';
+        cursor.style.backgroundColor = '#10b981';
+        if (textDisplay) textDisplay.innerText = "Charge bactérienne : Maîtrisée (Eau Saine)";
+        if (alertBanner) alertBanner.style.display = 'none';
+    }
+}
+
+export function updateGlobalHeaderStatus(measurements) {
+    const pillLsi = document.getElementById('statusLSI');
+    const valLsi = document.getElementById('valLSI');
+    const pillSanitizer = document.getElementById('statusSanitizer');
+    const valSanitizer = document.getElementById('valSanitizer');
+    if (!pillLsi || !pillSanitizer) return;
+
+    const lsi = getOrEstimateLSI(measurements);
+    pillLsi.className = 'status-pill';
+
+    if (lsi === null || isNaN(lsi)) {
+        valLsi.innerText = "--";
+    } else if (lsi >= -0.3 && lsi <= 0.3) {
+        pillLsi.classList.add('status-ok');
+        valLsi.innerText = "OK";
+    } else {
+        pillLsi.classList.add('status-warning');
+        valLsi.innerText = lsi < -0.3 ? "Corrosif" : "Entartrant";
+    }
+
+    const { currentCl, count: consecutiveLowCount } = getConsecutiveLowCount(measurements);
+    const maxTarget = parseFloat(localStorage.getItem('spa_chlLibreTargetMax')) || 4.0;
+    const minTarget = parseFloat(localStorage.getItem('spa_chlLibreTargetMin')) || 2.0;
+    const historyLength = JSON.parse(localStorage.getItem('spa_history') || '[]').length;
+
+    pillSanitizer.className = 'status-pill';
+
+    if (isNaN(currentCl) && historyLength === 0) {
+        valSanitizer.innerText = "--";
+    } else if (!isNaN(currentCl) && currentCl > maxTarget) {
+        pillSanitizer.classList.add('status-warning');
+        valSanitizer.innerText = "Surdosé";
+    } else if (consecutiveLowCount >= 2) {
+        pillSanitizer.classList.add('status-danger');
+        valSanitizer.innerText = "Risque Bio";
+    } else if (!isNaN(currentCl) && currentCl < minTarget) {
+        pillSanitizer.classList.add('status-warning');
+        valSanitizer.innerText = "Bassin Faible";
+    } else {
+        pillSanitizer.classList.add('status-ok');
+        valSanitizer.innerText = "Sain";
+    }
+}
+
+// --- GESTION DES GRAPHIQUES ET TABLEAUX ---
 
 export function updateChartTimeFilter(days, renderCallback) {
     currentChartDays = days;
@@ -44,7 +151,6 @@ export function renderHistoryTable() {
 
     headerRow.innerHTML = `<th>Date</th>${activeCols.map(c => `<th>${c.label}</th>`).join('')}<th>📝</th>`;
 
-    // --- LOGIQUE DE PAGINATION ---
     const itemsPerPage = 5;
     const totalPages = Math.max(1, Math.ceil(history.length / itemsPerPage));
     
@@ -89,7 +195,6 @@ export function renderMultiMetricsCharts() {
         if (!isEnabled) chk.checked = false;
     });
 
-    // Nettoyage complet des anciennes instances Chart.js
     subChartsInstances.forEach(instance => instance?.destroy?.());
     subChartsInstances = [];
     container.innerHTML = '';

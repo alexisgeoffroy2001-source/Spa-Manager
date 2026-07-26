@@ -1,11 +1,12 @@
-import { exportBackupToJSON, importBackupFromJSON, requestStoragePersistence, initTheme, applyTheme, updateOnlineStatus, getLastMeasurement, loadSettingsAndInventory, saveSettingsAndInventory } from './storage.js';
-import { toggleSettingsInputVisibility, syncSaltElectrolysisWithDisinfectant, updateProductRowLabelsOnTypeChange, addNewProductRow, buildDynamicMeasuresForm, computeDose, renderInventory, updateLSIUI, updateBiologicalStatusUI, updateGlobalHeaderStatus } from './calculator.js';
+import { exportBackupToJSON, importBackupFromJSON, requestStoragePersistence, initTheme, handleThemeSelection, applyTheme, updateOnlineStatus, getLastMeasurement, loadSettingsAndInventory, saveSettingsAndInventory } from './storage.js';
+import { toggleSettingsInputVisibility, buildDynamicMeasuresForm, computeDose } from './calculator.js';
+import { productTypes, addNewProductRow, updateProductRowLabelsOnTypeChange, syncSaltElectrolysisWithDisinfectant, renderInventory } from './products.js';
 import { renderMaintenanceTaskList, saveMaintenanceTasksFromDOM, markMaintenanceTaskAsCompleted, displayAddTaskModal, validateAndAddNewTask, handleMaintenancePresetSelection, requestNotificationPermission, evaluateAndTriggerMaintenanceAlerts } from './maintenance.js';
-import { updateChartTimeFilter, renderHistoryTable, wipeHistoryData, renderMultiMetricsCharts } from './charts.js';
+import { updateChartTimeFilter, renderHistoryTable, wipeHistoryData, renderMultiMetricsCharts, updateLSIUI, updateBiologicalStatusUI, updateGlobalHeaderStatus } from './charts.js';
 
 // --- ÉTAT DE NAVIGATION & PAGINATION ---
 let currentTreatmentPage = 1;
-window.currentMeasuresPage = 1;
+window.currentMeasuresPage = 1; // Exposé globalement pour la synchro avec charts.js
 const itemsPerPage = 5;
 
 // --- GESTION PWA ---
@@ -17,11 +18,42 @@ window.addEventListener('beforeinstallprompt', (e) => {
     toggleInstallButton(true);
 });
 
-window.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     if (isStandalone) {
         toggleInstallButton(false);
     }
+    
+    // --- INITIALISATION AU CHARGEMENT DU DOM ---
+    initTheme();
+    registerServiceWorker();
+    requestStoragePersistence();
+    updateOnlineStatus();
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+
+    localStorage.removeItem('spa_last_measurements');
+
+    if (!localStorage.getItem('spa_initialized')) {
+        localStorage.setItem('spa_initialized', 'true');
+    }
+    
+    loadSettingsAndInventory();
+    initTheme();
+    buildDynamicMeasuresForm();
+    renderMaintenanceTaskList();
+    renderTreatmentLogs();
+    evaluateAndTriggerMaintenanceAlerts();
+
+    if (localStorage.getItem('spa_results_visible') === 'block') {
+        restoreLastResults();
+    }
+
+    refreshGlobalUI();
+
+    // --- MISE EN PLACE DES ECOUTEURS D'ÉVÉNEMENTS ---
+    initEventListeners();
 });
 
 function toggleInstallButton(show) {
@@ -56,37 +88,6 @@ function registerServiceWorker() {
         navigator.serviceWorker.register('./sw.js').catch(err => console.error('Échec SW:', err));
     }
 }
-
-// --- INITIALISATION ---
-window.onload = function() {
-    initTheme();
-    registerServiceWorker();
-    requestStoragePersistence();
-    updateOnlineStatus();
-
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
-
-    // Nettoyage ancien stockage obsolète
-    localStorage.removeItem('spa_last_measurements');
-
-    if (!localStorage.getItem('spa_initialized')) {
-        localStorage.setItem('spa_initialized', 'true');
-    }
-    
-    loadSettingsAndInventory();
-
-    buildDynamicMeasuresForm();
-    renderMaintenanceTaskList();
-    renderTreatmentLogs();
-    evaluateAndTriggerMaintenanceAlerts();
-
-    if (localStorage.getItem('spa_results_visible') === 'block') {
-        restoreLastResults();
-    }
-
-    refreshGlobalUI();
-};
 
 function refreshGlobalUI() {
     const lastMeasurements = getLastMeasurement() || {};
@@ -139,6 +140,141 @@ function switchPage(pageId, title, element) {
     }
 }
 
+// --- CENTRALISATION DES ECOUTEURS D'EVENEMENTS ---
+function initEventListeners() {
+    // 1. Navigation (Barre de menu du bas)
+    const navItems = document.querySelectorAll('nav .nav-item');
+    const pageMapping = ['measures', 'treatment', 'charts', 'maintenance', 'targets'];
+    const titleMapping = ['Saisie des Mesures', 'Actions & Produits', 'Suivi & Historique', 'Entretien du Spa', 'Réglages & Cibles'];
+
+    navItems.forEach((item, index) => {
+        item.addEventListener('click', () => {
+            switchPage(pageMapping[index], titleMapping[index], item);
+        });
+    });
+
+    // 2. Mesures & Calcul
+    const measuresCardBtn = document.querySelector('#page-measures button[type="button"]');
+    if (measuresCardBtn) measuresCardBtn.addEventListener('click', calculateAndSave);
+
+    // 3. Traitements & Validation
+    const validateTreatmentBtn = document.getElementById('validateTreatmentBtn');
+    if (validateTreatmentBtn) validateTreatmentBtn.addEventListener('click', validateAppliedTreatment);
+
+    // Pagination Traitement
+    const prevTreatment = document.querySelector('#treatmentPagination button:first-child');
+    const nextTreatment = document.querySelector('#treatmentPagination button:last-child');
+    if (prevTreatment) prevTreatment.addEventListener('click', () => changePage(-1, 'treatment'));
+    if (nextTreatment) nextTreatment.addEventListener('click', () => changePage(1, 'treatment'));
+
+    // 4. Graphiques & Filtres temporels
+    document.querySelectorAll('#page-charts .chart-selectors input[type="checkbox"]').forEach(chk => {
+        chk.addEventListener('change', renderMultiMetricsCharts);
+    });
+
+    const filter7 = document.getElementById('filter-7');
+    const filter15 = document.getElementById('filter-15');
+    const filter30 = document.getElementById('filter-30');
+    const filter0 = document.getElementById('filter-0');
+
+    if (filter7) filter7.addEventListener('click', () => updateChartTimeFilter(7, renderMultiMetricsCharts));
+    if (filter15) filter15.addEventListener('click', () => updateChartTimeFilter(15, renderMultiMetricsCharts));
+    if (filter30) filter30.addEventListener('click', () => updateChartTimeFilter(30, renderMultiMetricsCharts));
+    if (filter0) filter0.addEventListener('click', () => updateChartTimeFilter(0, renderMultiMetricsCharts));
+
+    // Pagination Mesures & Effacer historique
+    const prevMeasures = document.getElementById('prevMeasuresPageBtn') || document.querySelector('#measuresPagination button:first-child');
+    const nextMeasures = document.getElementById('nextMeasuresPageBtn') || document.querySelector('#measuresPagination button:last-child');
+    
+    if (prevMeasures) {
+        prevMeasures.addEventListener('click', () => {
+            window.currentMeasuresPage = Math.max(1, (window.currentMeasuresPage || 1) - 1);
+            renderHistoryTable();
+        });
+    }
+    if (nextMeasures) {
+        nextMeasures.addEventListener('click', () => {
+            window.currentMeasuresPage = (window.currentMeasuresPage || 1) + 1;
+            renderHistoryTable();
+        });
+    }
+
+    const wipeHistoryBtn = document.querySelector('#page-charts .btn-danger');
+    if (wipeHistoryBtn) {
+        wipeHistoryBtn.addEventListener('click', () => wipeHistoryData(renderHistoryTable));
+    }
+
+    // 5. Entretien & Maintenance (Correction Ajout de tâche)
+    const addMaintenanceTaskBtn = document.getElementById('openAddTaskModalBtn') || document.querySelector('#page-maintenance .btn-success');
+    if (addMaintenanceTaskBtn) {
+        addMaintenanceTaskBtn.addEventListener('click', displayAddTaskModal);
+    }
+
+    const saveMaintenanceBtn = document.querySelector('#page-maintenance button:not(.btn-success)');
+    if (saveMaintenanceBtn) saveMaintenanceBtn.addEventListener('click', saveMaintenanceTasksFromDOM);
+
+    // 6. Gestion des Produits & Inventaire (Correction Ajout de produit)
+    const addNewProductBtn = document.getElementById('addNewProductBtn');
+    if (addNewProductBtn) {
+        addNewProductBtn.addEventListener('click', () => {
+            addNewProductRow();
+            saveSettingsAndInventory();
+        });
+    }
+
+    // 7. Réglages & Paramètres (Correction Changement de Thème)
+    const volInput = document.getElementById('vol');
+    if (volInput) volInput.addEventListener('input', saveSettingsAndInventory);
+
+    const disinfectantSelect = document.getElementById('disinfectantType');
+    if (disinfectantSelect) {
+        disinfectantSelect.addEventListener('change', () => {
+            syncSaltElectrolysisWithDisinfectant();
+            saveSettingsAndInventory();
+        });
+    }
+
+    ['enableTemp', 'enablePh', 'enableChlLibre', 'enableChlTotal', 'enableTac', 'enableStab', 'enableTh'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', () => {
+                toggleSettingsInputVisibility();
+                saveSettingsAndInventory();
+            });
+        }
+    });
+
+    ['phTargetMin', 'phTargetMax', 'chlLibreTargetMin', 'chlLibreTargetMax', 'chlTotalTargetMin', 'chlTotalTargetMax', 'tacTargetMin', 'tacTargetMax', 'stabTargetMin', 'stabTargetMax', 'thTargetMin', 'thTargetMax'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', saveSettingsAndInventory);
+    });
+
+    // Gestion propre du sélecteur de thème
+    const themeSelect = document.getElementById('themeSelect');
+    if (themeSelect) {
+        themeSelect.addEventListener('change', handleThemeSelection);
+    }
+
+    const notifBtn = document.querySelector('#page-targets .btn-secondary');
+    if (notifBtn) notifBtn.addEventListener('click', requestNotificationPermission);
+
+    const installBtn = document.getElementById('btnInstallApp');
+    if (installBtn) installBtn.addEventListener('click', installPWA);
+
+    // Sauvegarde & Restauration
+    const exportBtn = document.querySelector('#page-targets .grid button:first-child');
+    const importTriggerBtn = document.querySelector('#page-targets .grid button:last-child');
+    const importFileInput = document.getElementById('importFile');
+    const resetAllBtn = document.querySelector('#page-targets .btn-danger');
+
+    if (exportBtn) exportBtn.addEventListener('click', exportBackupToJSON);
+    if (importTriggerBtn && importFileInput) {
+        importTriggerBtn.addEventListener('click', () => importFileInput.click());
+        importFileInput.addEventListener('change', importBackupFromJSON);
+    }
+    if (resetAllBtn) resetAllBtn.addEventListener('click', () => wipeHistoryData(renderHistoryTable));
+}
+
 // --- CALCULATEUR & TRAITEMENTS ---
 
 function formatDoseLabel(doseObj) {
@@ -147,7 +283,7 @@ function formatDoseLabel(doseObj) {
     return `${doseObj.value}g`;
 }
 
-export function calculateAndSave() {
+function calculateAndSave() {
     const measurements = {
         date: new Date().toISOString().split('T')[0],
         temp: parseFloat(document.getElementById('tempVal')?.value),
@@ -342,8 +478,11 @@ function validateAppliedTreatment() {
         }
     });
 
+    // 1. Sauvegarde des stocks mis à jour dans le localStorage
     localStorage.setItem('spa_dynamic_products', JSON.stringify(stockUpdates));
-    loadTargets();      
+    
+    // 2. Rafraîchissement immédiat de l'inventaire affiché à l'écran
+    loadSettingsAndInventory()
     renderInventory();  
 
     if (appliedList.length > 0) {
@@ -369,7 +508,7 @@ function validateAppliedTreatment() {
         if (btn) btn.style.display = 'none';
 
         localStorage.setItem('spa_last_steps', '');
-        alert("✅ Traitement enregistré et stock mis à jour avec succès !");
+        // Le pop-up (alert) a été supprimé ici pour une transition fluide.
     }
 }
 
@@ -383,7 +522,7 @@ function changePage(direction, type) {
         currentTreatmentPage = Math.max(1, Math.min(totalPages, currentTreatmentPage + direction));
         renderTreatmentLogs();
     } else {
-        window.currentMeasuresPage = Math.max(1, Math.min(totalPages, window.currentMeasuresPage + direction));
+        window.currentMeasuresPage = Math.max(1, Math.min(totalPages, (window.currentMeasuresPage || 1) + direction));
         renderHistoryTable();
     }
 }
@@ -415,34 +554,3 @@ function renderTreatmentLogs() {
         indicatorEl.textContent = `Page ${currentTreatmentPage}/${totalPages}`;
     }
 }
-
-// --- EXPORT GLOBAL POUR LE DOM ---
-window.spaApp = {
-    switchPage,
-    calculateAndSave,
-    validateAppliedTreatment,
-    loadSettingsAndInventory, 
-    saveSettingsAndInventory,
-    toggleSettingsInputVisibility, 
-    syncSaltElectrolysisWithDisinfectant,
-    updateProductRowLabelsOnTypeChange,
-    addNewProductRow,
-    renderInventory,
-    applyTheme,
-    requestNotificationPermission,
-    exportBackupToJSON,
-    importBackupFromJSON,
-    wipeHistoryData: () => wipeHistoryData(renderHistoryTable),
-    updateChartTimeFilter: (days) => updateChartTimeFilter(days, renderMultiMetricsCharts),
-    renderMultiMetricsCharts,
-    saveMaintenanceTasksFromDOM,
-    markMaintenanceTaskAsCompleted,
-    displayAddTaskModal,
-    validateAndAddNewTask,
-    handleMaintenancePresetSelection,
-    installPWA,
-    nextTreatmentPage: () => changePage(1, 'treatment'),
-    prevTreatmentPage: () => changePage(-1, 'treatment'),
-    nextMeasuresPage: () => changePage(1, 'measures'),
-    prevMeasuresPage: () => changePage(-1, 'measures')
-};

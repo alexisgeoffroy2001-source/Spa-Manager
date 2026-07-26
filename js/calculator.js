@@ -1,15 +1,9 @@
-import {saveSettingsAndInventory, loadSettingsAndInventory} from './storage.js'
+import { saveSettingsAndInventory } from './storage.js';
+import { productTypes, addNewProductRow, updateProductRowLabelsOnTypeChange, syncSaltElectrolysisWithDisinfectant } from './products.js';
+import { updateLSIUI, updateBiologicalStatusUI, updateGlobalHeaderStatus } from './charts.js';
 
-// --- Déclaration de productTypes manquante ---
-export const productTypes = [
-    { id: 'ph_minus', name: 'pH Minus (pH-)' },
-    { id: 'ph_plus', name: 'pH Plus (pH+)' },
-    { id: 'tac_plus', name: 'TAC Plus' },
-    { id: 'chlore_choc', name: 'Chlore Choc' },
-    { id: 'brome', name: 'Brome' },
-    { id: 'oxygene', name: 'Oxygène Actif' },
-    { id: 'salt_electrolysis', name: 'Sel / Électrolyseur' }
-];
+// Ré-exportation pour compatibilité avec le reste de l'application
+export { productTypes, addNewProductRow, updateProductRowLabelsOnTypeChange, syncSaltElectrolysisWithDisinfectant };
 
 const DEFAULT_RANGES = {
     ph: { min: 7.2, max: 7.6 },
@@ -26,139 +20,6 @@ export function toggleSettingsInputVisibility() {
         const chk = document.getElementById(`enable${param}`);
         if (el && chk) el.style.display = chk.checked ? 'block' : 'none';
     });
-}
-
-export function syncSaltElectrolysisWithDisinfectant() {
-    const disinfectant = document.getElementById('disinfectantType')?.value;
-    const container = document.getElementById('dynamicProductsList');
-    if (!container) return;
-
-    const saltCard = Array.from(container.querySelectorAll('.product-config-box')).find(box => 
-        box.querySelector('.prod-type')?.value === 'salt_electrolysis'
-    );
-
-    if (disinfectant === 'sel' && !saltCard) {
-        addNewProductRow({ type: 'salt_electrolysis', m: 500, d: 1.0, v: 2.0, stock: 0, unit: 'g' });
-        window.spaApp?.saveSettingsAndInventory?.();
-    } else if (disinfectant !== 'sel' && saltCard) {
-        saltCard.remove();
-        window.spaApp?.saveSettingsAndInventory?.();
-    }
-}
-
-export function evaluateProductStockAlert(cardElement) {
-    if (!cardElement) return;
-
-    const type = cardElement.querySelector('.prod-type')?.value;
-    const m = parseFloat(cardElement.querySelector('.prod-m')?.value) || 0;
-    const d = parseFloat(cardElement.querySelector('.prod-d')?.value) || 1;
-    const v = parseFloat(cardElement.querySelector('.prod-v')?.value) || 1;
-    const currentStock = parseFloat(cardElement.querySelector('.prod-stock')?.value) || 0;
-    const unit = cardElement.querySelector('.prod-unit')?.value || 'g';
-    const spaVol = parseFloat(localStorage.getItem('spa_vol')) || 1.5;
-
-    let referenceDelta = (type === 'tac_plus') ? 20 : (['chlore_choc', 'brome', 'oxygene'].includes(type) ? 2.0 : 0.3);
-
-    let singleDoseGrams = 0;
-    if (m > 0 && d > 0 && v > 0) {
-        singleDoseGrams = (m / (d * v)) * referenceDelta * spaVol;
-    }
-
-    // Normalisation de la dose de référence dans l'unité du produit
-    let alertThreshold = 0;
-    if (['unit', 'tablet', 'bag'].includes(unit)) {
-        const singleDoseUnits = Math.max(1, Math.round(singleDoseGrams / m));
-        alertThreshold = singleDoseUnits * 3;
-    } else if (unit === 'kg') {
-        const singleDoseKg = singleDoseGrams / 1000;
-        alertThreshold = singleDoseKg * 3;
-    } else {
-        alertThreshold = singleDoseGrams * 3;
-    }
-
-    cardElement.classList.remove('stock-warning', 'out-of-stock');
-    if (currentStock <= alertThreshold/3) {
-        cardElement.classList.add('out-of-stock');
-    } else if (currentStock <= alertThreshold) {
-        cardElement.classList.add('stock-warning');
-    }
-}
-
-export function addNewProductRow(data = null) {
-    const container = document.getElementById('dynamicProductsList');
-    if (!container) return;
-
-    const typeVal = data?.type || 'ph_minus';
-    const mVal = data?.m ?? 500;   
-    const dVal = data?.d ?? 1;     
-    const vVal = data?.v ?? 2;     
-    const stockVal = data?.stock ?? 1000;
-    const initialStockVal = data?.initialStock || stockVal;
-    const unitVal = data?.unit || (typeVal === 'salt_electrolysis' ? 'kg' : 'g');
-
-    const optionsHTML = productTypes.map(pt => 
-        `<option value="${pt.id}" ${typeVal === pt.id ? 'selected' : ''}>${pt.name}</option>`
-    ).join('');
-
-    const rowDiv = document.createElement('div');
-    rowDiv.className = 'product-config-box';
-    rowDiv.dataset.initialStock = initialStockVal;
-
-    const isElectrolysis = typeVal === 'salt_electrolysis';
-
-    rowDiv.innerHTML = `
-        <div class="product-row-flex product-row-spaced">
-            <select class="prod-type product-type-select" onchange="window.spaApp.updateProductRowLabelsOnTypeChange(this)">${optionsHTML}</select>
-            <button type="button" class="btn-danger product-delete-btn" onclick="this.closest('.product-config-box').remove(); window.spaApp.saveSettingsAndInventory();">❌ Supprimer</button>
-        </div>
-        <div class="product-row-flex product-row-gap">
-            <div class="form-group product-input-group">
-                <label class="lbl-m product-input-label">${isElectrolysis ? 'Sel (g)' : 'Dose (g)'}</label>
-                <input type="number" inputmode="decimal" class="prod-m" value="${mVal}" step="10" oninput="window.spaApp.saveSettingsAndInventory()">
-            </div>
-            <div class="form-group product-input-group">
-                <label class="lbl-d product-input-label">${isElectrolysis ? 'Delta (ppm)' : 'Delta'}</label>
-                <input type="number" inputmode="decimal" class="prod-d" value="${dVal}" step="0.1" oninput="window.spaApp.saveSettingsAndInventory()">
-            </div>
-            <div class="form-group product-input-group">
-                <label class="lbl-v product-input-label">${isElectrolysis ? 'Temps (h)' : 'Vol. (m³)'}</label>
-                <input type="number" inputmode="decimal" class="prod-v" value="${vVal}" step="0.5" oninput="window.spaApp.saveSettingsAndInventory()">
-            </div>
-        </div>
-
-        <div class="stock-container">
-            <div class="form-group product-stock-group">
-                <label class="product-input-label">📦 Stock restant</label>
-                <input type="number" inputmode="decimal" class="prod-stock" value="${stockVal}" step="0.1" oninput="window.spaApp.saveSettingsAndInventory(); window.spaApp.renderInventory();">
-            </div>
-            <div class="form-group product-unit-group">
-                <label class="product-input-label">Unité</label>
-                <select class="prod-unit product-unit-select" onchange="window.spaApp.saveSettingsAndInventory(); window.spaApp.renderInventory();">
-                    <option value="g" ${unitVal === 'g' ? 'selected' : ''}>Grammes (g)</option>
-                    <option value="kg" ${unitVal === 'kg' ? 'selected' : ''}>Kilogrammes (kg)</option>
-                    <option value="tablet" ${unitVal === 'tablet' ? 'selected' : ''}>Pastilles</option>
-                </select>
-            </div>
-        </div>
-    `;
-    container.appendChild(rowDiv);
-}
-
-export function updateProductRowLabelsOnTypeChange(selectElem) {
-    const card = selectElem.closest('.product-config-box');
-    if (!card) return;
-
-    const isElectrolysis = selectElem.value === 'salt_electrolysis';
-    card.querySelector('.lbl-m').textContent = isElectrolysis ? 'Sel (g)' : 'Dose (g/unit)';
-    card.querySelector('.lbl-d').textContent = isElectrolysis ? 'Delta (ppm)' : 'Delta';
-    card.querySelector('.lbl-v').textContent = isElectrolysis ? 'Temps (h)' : 'Vol. (m³)';
-    
-    const unitSelect = card.querySelector('.prod-unit');
-    if (unitSelect && isElectrolysis && unitSelect.value === 'g') {
-        unitSelect.value = 'kg';
-    }
-
-    window.spaApp?.saveSettingsAndInventory?.();
 }
 
 export function buildDynamicMeasuresForm() {
@@ -214,8 +75,26 @@ export function computeDose(productType, diff) {
     return { value: Math.round(rawDose), unit: 'g' };
 }
 
-export function renderInventory() {
-    document.querySelectorAll('#dynamicProductsList .product-config-box').forEach(evaluateProductStockAlert);
+export function convertDoseUnits(value, fromUnit, toUnit, productM = 1) {
+    if (isNaN(value)) return 0;
+    
+    // Étape 1 : Normalisation en grammes (ou unités de base)
+    let valueInGrams = value;
+    if (fromUnit === 'kg') {
+        valueInGrams = value * 1000;
+    } else if (['tablet', 'unit'].includes(fromUnit)) {
+        valueInGrams = value * productM;
+    }
+
+    // Étape 2 : Conversion vers l'unité demandée
+    if (toUnit === 'kg') {
+        return valueInGrams / 1000;
+    } else if (['tablet', 'unit'].includes(toUnit)) {
+        return productM > 0 ? Math.max(1, Math.round(valueInGrams / productM)) : valueInGrams;
+    }
+    
+    // Par défaut en grammes
+    return Math.round(valueInGrams);
 }
 
 export function calculateLSI(ph, tempC, tac, th, tds = 1000) {
@@ -240,29 +119,7 @@ export function getOrEstimateLSI(measurements) {
     return calculateLSI(ph, temp, tac, th);
 }
 
-export function updateLSIUI(measurements) {
-    const cursor = document.getElementById('lsiGaugeCursor');
-    const textDisplay = document.getElementById('lsiHeaderValue');
-    if (!cursor) return;
-
-    const lsi = getOrEstimateLSI(measurements);
-    if (lsi === null || isNaN(lsi)) {
-        cursor.style.left = '50%';
-        cursor.style.backgroundColor = '#9ca3af';
-        if (textDisplay) textDisplay.innerText = "LSI : --";
-        return;
-    }
-
-    const percent = ((Math.max(-1, Math.min(1, lsi)) + 1) / 2) * 100;
-    cursor.style.left = `${percent}%`;
-    cursor.style.backgroundColor = lsi < -0.3 ? '#ef4444' : (lsi > 0.3 ? '#f59e0b' : '#10b981');
-
-    if (textDisplay) {
-        textDisplay.innerText = `LSI : ${lsi > 0 ? '+' : ''}${lsi.toFixed(2)}`;
-    }
-}
-
-function getConsecutiveLowCount(measurements) {
+export function getConsecutiveLowCount(measurements) {
     const currentCl = parseFloat(measurements?.chlLibre ?? measurements?.chlorine ?? measurements?.bromine);
     const minTarget = parseFloat(localStorage.getItem('spa_chlLibreTargetMin')) || 2.0;
     const history = JSON.parse(localStorage.getItem('spa_history') || '[]');
@@ -276,83 +133,4 @@ function getConsecutiveLowCount(measurements) {
         }
     }
     return { currentCl, count };
-}
-
-export function updateBiologicalStatusUI(measurements) {
-    const cursor = document.getElementById('bioGaugeCursor');
-    const textDisplay = document.getElementById('bioGaugeValue');
-    const alertBanner = document.getElementById('biofilmAlertBanner');
-    if (!cursor) return;
-
-    const { currentCl, count: consecutiveLowCount } = getConsecutiveLowCount(measurements);
-    const historyLength = JSON.parse(localStorage.getItem('spa_history') || '[]').length;
-
-    if (isNaN(currentCl) && historyLength === 0) {
-        cursor.style.left = '16.6%';
-        cursor.style.backgroundColor = '#9ca3af';
-        if (textDisplay) textDisplay.innerText = "Charge bactérienne : Données insuffisantes";
-        if (alertBanner) alertBanner.style.display = 'none';
-        return;
-    }
-
-    if (consecutiveLowCount >= 2 || (currentCl === 0 && consecutiveLowCount >= 1)) {
-        cursor.style.left = '83.3%';
-        cursor.style.backgroundColor = '#ef4444';
-        if (textDisplay) textDisplay.innerText = "Charge bactérienne : ÉLEVÉE (Risque Biofilm)";
-        if (alertBanner) alertBanner.style.display = 'block';
-    } else if (consecutiveLowCount === 1) {
-        cursor.style.left = '50%';
-        cursor.style.backgroundColor = '#f59e0b';
-        if (textDisplay) textDisplay.innerText = "Charge bactérienne : Vigilance (Sous-dosage récent)";
-        if (alertBanner) alertBanner.style.display = 'none';
-    } else {
-        cursor.style.left = '16.6%';
-        cursor.style.backgroundColor = '#10b981';
-        if (textDisplay) textDisplay.innerText = "Charge bactérienne : Maîtrisée (Eau Saine)";
-        if (alertBanner) alertBanner.style.display = 'none';
-    }
-}
-
-export function updateGlobalHeaderStatus(measurements) {
-    const pillLsi = document.getElementById('statusLSI');
-    const valLsi = document.getElementById('valLSI');
-    const pillSanitizer = document.getElementById('statusSanitizer');
-    const valSanitizer = document.getElementById('valSanitizer');
-    if (!pillLsi || !pillSanitizer) return;
-
-    const lsi = getOrEstimateLSI(measurements);
-    pillLsi.className = 'status-pill';
-
-    if (lsi === null || isNaN(lsi)) {
-        valLsi.innerText = "--";
-    } else if (lsi >= -0.3 && lsi <= 0.3) {
-        pillLsi.classList.add('status-ok');
-        valLsi.innerText = "OK";
-    } else {
-        pillLsi.classList.add('status-warning');
-        valLsi.innerText = lsi < -0.3 ? "Corrosif" : "Entartrant";
-    }
-
-    const { currentCl, count: consecutiveLowCount } = getConsecutiveLowCount(measurements);
-    const maxTarget = parseFloat(localStorage.getItem('spa_chlLibreTargetMax')) || 4.0;
-    const minTarget = parseFloat(localStorage.getItem('spa_chlLibreTargetMin')) || 2.0;
-    const historyLength = JSON.parse(localStorage.getItem('spa_history') || '[]').length;
-
-    pillSanitizer.className = 'status-pill';
-
-    if (isNaN(currentCl) && historyLength === 0) {
-        valSanitizer.innerText = "--";
-    } else if (!isNaN(currentCl) && currentCl > maxTarget) {
-        pillSanitizer.classList.add('status-warning');
-        valSanitizer.innerText = "Surdosé";
-    } else if (consecutiveLowCount >= 2) {
-        pillSanitizer.classList.add('status-danger');
-        valSanitizer.innerText = "Risque Bio";
-    } else if (!isNaN(currentCl) && currentCl < minTarget) {
-        pillSanitizer.classList.add('status-warning');
-        valSanitizer.innerText = "Bassin Faible";
-    } else {
-        pillSanitizer.classList.add('status-ok');
-        valSanitizer.innerText = "Sain";
-    }
 }

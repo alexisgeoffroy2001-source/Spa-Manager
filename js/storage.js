@@ -1,4 +1,5 @@
-import { toggleSettingsInputVisibility, addNewProductRow, syncSaltElectrolysisWithDisinfectant, renderInventory, evaluateProductStockAlert} from './calculator.js';
+import { toggleSettingsInputVisibility } from './calculator.js';
+import { addNewProductRow, syncSaltElectrolysisWithDisinfectant, renderInventory } from './products.js';
 
 export const STORAGE_KEYS = {
     HISTORY: 'spa_history',
@@ -112,10 +113,10 @@ export function handleThemeSelection() {
 }
 
 export function applyTheme(theme) {
-    const root = document.documentElement;
     const isDark = theme === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : (theme === 'dark');
 
-    root.classList.toggle('dark-mode', isDark);
+    // On applique la classe dark-mode directement sur le body pour correspondre à votre CSS
+    document.body.classList.toggle('dark-mode', isDark);
     localStorage.setItem(STORAGE_KEYS.THEME, theme);
 }
 
@@ -181,7 +182,6 @@ export function saveSettingsAndInventory() {
     });
 
     localStorage.setItem('spa_dynamic_products', JSON.stringify(productsArray));
-    console.log("[SAVE] Produits enregistrés :", productsArray);
 }
 
 export function loadSettingsAndInventory() {
@@ -223,15 +223,11 @@ export function loadSettingsAndInventory() {
         
         if (savedProducts.length === 0) {
             // S'il n'y a rien en mémoire, on charge un produit par défaut
-            if (typeof window.spaApp.addNewProductRow === 'function') {
-                window.spaApp.addNewProductRow({ type: 'ph_minus', m: 500, d: 1.0, v: 2.0, stock: 1000, unit: 'g' });
-            }
+            addNewProductRow({ type: 'ph_minus', m: 500, d: 1.0, v: 2.0, stock: 1000, unit: 'g' });
         } else {
             // Sinon, on boucle sur les produits sauvegardés pour les recréer
             savedProducts.forEach(prodData => {
-                if (typeof window.spaApp.addNewProductRow === 'function') {
-                    window.spaApp.addNewProductRow(prodData);
-                }
+                addNewProductRow(prodData);
             });
         }
     }

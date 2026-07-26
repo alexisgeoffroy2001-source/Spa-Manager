@@ -1,3 +1,5 @@
+import { saveSettingsAndInventory } from './storage.js';
+
 export const predefinedTasks = [
     { id: 'filter', name: 'Nettoyage du filtre', intervalDays: 14 },
     { id: 'drain', name: 'Vidange d\'eau', intervalDays: 90 },
@@ -16,7 +18,6 @@ export function getMaintenanceTasks() {
             console.error("Erreur de lecture du JSON de maintenance", e);
         }
     }
-    // Tâches par défaut si rien n'est enregistré
     return [
         { name: 'Nettoyage du filtre', enabled: true, intervalDays: 14, lastDone: null },
         { name: 'Vidange d\'eau', enabled: true, intervalDays: 90, lastDone: null }
@@ -56,24 +57,50 @@ export function renderMaintenanceTaskList() {
             <div class="task-card" data-index="${index}" data-lastdone="${task.lastDone || ''}">
                 <div class="task-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <label class="task-title" style="display: flex; align-items: center; gap: 8px; flex: 1; margin: 0;">
-                        <input type="checkbox" class="task-en" ${task.enabled ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: var(--primary);" onchange="window.spaApp.saveMaintenanceTasksFromDOM()"> 
-                        <input type="text" class="task-name" value="${task.name}" placeholder="Nom de la tâche" style="font-weight: 600; padding: 6px 10px; font-size: 0.9rem;" onchange="window.spaApp.saveMaintenanceTasksFromDOM()">
+                        <input type="checkbox" class="task-en" ${task.enabled ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: var(--primary);"> 
+                        <input type="text" class="task-name" value="${task.name}" placeholder="Nom de la tâche" style="font-weight: 600; padding: 6px 10px; font-size: 0.9rem;">
                     </label>
-                    <button type="button" class="btn-danger" style="width: auto; padding: 6px 10px; margin: 0; font-size: 0.8rem;" onclick="this.closest('.task-card').remove(); window.spaApp.saveMaintenanceTasksFromDOM();">❌</button>
+                    <button type="button" class="btn-danger task-delete-btn" style="width: auto; padding: 6px 10px; margin: 0; font-size: 0.8rem;">❌</button>
                 </div>
                 ${statusHTML}
                 <div class="grid" style="align-items: end; margin-top: 8px;">
                     <div class="form-group" style="margin:0;">
                         <label>Intervalle (Jours)</label>
-                        <input type="number" inputmode="decimal" class="task-int" value="${task.intervalDays}" min="1" onchange="window.spaApp.saveMaintenanceTasksFromDOM()">
+                        <input type="number" inputmode="decimal" class="task-int" value="${task.intervalDays}" min="1">
                     </div>
-                    <button type="button" class="btn-success" onclick="window.spaApp.markMaintenanceTaskAsCompleted(${index})" ${!task.enabled ? 'disabled' : ''}>Marquer Fait</button>
+                    <button type="button" class="btn-success task-complete-btn" ${!task.enabled ? 'disabled' : ''}>Marquer Fait</button>
                 </div>
             </div>
         `;
     }).join('');
 
     container.innerHTML = cardsHTML;
+
+    // --- MISE EN PLACE DES ÉCOUTEURS D'ÉVÉNEMENTS DYNAMIQUES SUR LES CARTES ---
+    container.querySelectorAll('.task-card').forEach((card, index) => {
+        const checkboxEn = card.querySelector('.task-en');
+        const inputName = card.querySelector('.task-name');
+        const inputInt = card.querySelector('.task-int');
+        const deleteBtn = card.querySelector('.task-delete-btn');
+        const completeBtn = card.querySelector('.task-complete-btn');
+
+        if (checkboxEn) checkboxEn.addEventListener('change', saveMaintenanceTasksFromDOM);
+        if (inputName) inputName.addEventListener('change', saveMaintenanceTasksFromDOM);
+        if (inputInt) inputInt.addEventListener('change', saveMaintenanceTasksFromDOM);
+
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+                card.remove();
+                saveMaintenanceTasksFromDOM();
+            });
+        }
+
+        if (completeBtn) {
+            completeBtn.addEventListener('click', () => {
+                markMaintenanceTaskAsCompleted(index);
+            });
+        }
+    });
 }
 
 export function appendNewTaskToStorage(taskData = null) {
@@ -110,7 +137,7 @@ export function displayAddTaskModal() {
                 
                 <div class="form-group">
                     <label for="modalTaskPreset">Modèle prédéfini</label>
-                    <select id="modalTaskPreset" onchange="window.spaApp.handleMaintenancePresetSelection()">
+                    <select id="modalTaskPreset">
                         <option value="custom">-- Tâche personnalisée --</option>
                         ${optionsHtml}
                     </select>
@@ -127,12 +154,19 @@ export function displayAddTaskModal() {
                 </div>
 
                 <div style="display: flex; gap: 8px; margin-top: 16px;">
-                    <button class="btn-secondary" type="button" onclick="document.getElementById('taskModalOverlay').style.display='none'">Annuler</button>
-                    <button type="button" onclick="window.spaApp.validateAndAddNewTask()">Ajouter</button>
+                    <button class="btn-secondary" type="button" id="modalCancelBtn">Annuler</button>
+                    <button type="button" id="modalAddBtn">Ajouter</button>
                 </div>
             </div>
         `;
         document.body.appendChild(modalOverlay);
+
+        // --- ECOUTEURS POUR LA MODALE ---
+        document.getElementById('modalTaskPreset').addEventListener('change', handleMaintenancePresetSelection);
+        document.getElementById('modalCancelBtn').addEventListener('click', () => {
+            modalOverlay.style.display = 'none';
+        });
+        document.getElementById('modalAddBtn').addEventListener('click', validateAndAddNewTask);
     } else {
         document.getElementById('modalTaskName').value = '';
         document.getElementById('modalTaskInterval').value = '14';

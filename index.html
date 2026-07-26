@@ -58,20 +58,20 @@
                 <label for="eventNote">📝 Événement / Note (Optionnel)</label>
                 <input type="text" id="eventNote" placeholder="Ex: Vidange, Choc, Nettoyage filtre...">
             </div>
-            <button type="button" onclick="window.spaApp.calculateAndSave()">Enregistrer & Calculer</button>
+            <button type="button" id="calculateAndSaveBtn">Enregistrer & Calculer</button>
         </div>
     </div>
 
     <!-- ONGLET 2 : TRAITEMENT & PRODUITS -->
     <div id="page-treatment" class="page">
         <div class="card" id="resultsCard">
-            <h2>Analyse & Conseils</h2>
+            <h2>Traitement à appliquer</h2>
             <div id="balancedWaterBanner" class="balanced-banner" style="display:none;">
                 <div style="font-size: 1.5rem;">🎉</div>
                 <strong>Eau parfaitement équilibrée !</strong>
             </div>
             <div id="treatmentSteps"></div>
-            <button type="button" id="validateTreatmentBtn" class="btn-success" style="margin-top: 12px; display: none;" onclick="window.spaApp.validateAppliedTreatment()">✅ Enregistrer les produits appliqués</button>
+            <button type="button" id="validateTreatmentBtn" class="btn-success" style="margin-top: 12px; display: none;">✅ Enregistrer les produits appliqués</button>
         </div>
 
         <div class="card">
@@ -81,16 +81,16 @@
             </div>
             <!-- Pagination Historique Traitements -->
             <div id="treatmentPagination" style="display: none; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border-card);">
-                <button type="button" class="btn-secondary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 0.8rem;" onclick="window.spaApp.prevTreatmentPage()">◀ Précédent</button>
+                <button type="button" id="prevTreatmentPageBtn" class="btn-secondary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 0.8rem;">◀ Précédent</button>
                 <span id="treatmentPageIndicator" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Page 1/1</span>
-                <button type="button" class="btn-secondary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 0.8rem;" onclick="window.spaApp.nextTreatmentPage()">Suivant ▶</button>
+                <button type="button" id="nextTreatmentPageBtn" class="btn-secondary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 0.8rem;">Suivant ▶</button>
             </div>
         </div>
 
         <div class="card">
             <h3>📦 Gestion & État des stocks</h3>
             <div id="dynamicProductsList"></div>
-            <button type="button" class="btn-secondary" style="margin-top: 10px;" onclick="window.spaApp.addNewProductRow()">+ Ajouter un produit</button>
+            <button type="button" id="addNewProductBtn" class="btn-secondary" style="margin-top: 10px;">+ Ajouter un produit</button>
         </div>
     </div>
 
@@ -99,19 +99,19 @@
         <div class="card">
             <h2>📈 Suivi graphique</h2>
             <div class="chart-selectors" id="chartSelectors">
-                <label class="chart-selector-item"><input type="checkbox" value="temp" checked onchange="window.spaApp.renderMultiMetricsCharts()"> 🌡️ Temp.</label>
-                <label class="chart-selector-item"><input type="checkbox" value="ph" checked onchange="window.spaApp.renderMultiMetricsCharts()"> 🧪 pH</label>
-                <label class="chart-selector-item"><input type="checkbox" value="chlLibre" checked onchange="window.spaApp.renderMultiMetricsCharts()"> ✨ Cl. Libre</label>
-                <label class="chart-selector-item"><input type="checkbox" value="chlTotal" onchange="window.spaApp.renderMultiMetricsCharts()"> 🧪 Cl. Total</label>
-                <label class="chart-selector-item"><input type="checkbox" value="tac" checked onchange="window.spaApp.renderMultiMetricsCharts()"> ⚖️ TAC</label>
-                <label class="chart-selector-item"><input type="checkbox" value="stab" onchange="window.spaApp.renderMultiMetricsCharts()"> 🛡️ Stab.</label>
-                <label class="chart-selector-item"><input type="checkbox" value="th" onchange="window.spaApp.renderMultiMetricsCharts()"> 💎 TH</label>
+                <label class="chart-selector-item"><input type="checkbox" value="temp" checked> 🌡️ Temp.</label>
+                <label class="chart-selector-item"><input type="checkbox" value="ph" checked> 🍋 pH</label>
+                <label class="chart-selector-item"><input type="checkbox" value="chlLibre" checked> ✨ Cl. Libre</label>
+                <label class="chart-selector-item"><input type="checkbox" value="chlTotal"> 🧪 Cl. Total</label>
+                <label class="chart-selector-item"><input type="checkbox" value="tac" checked> ⚖️ TAC</label>
+                <label class="chart-selector-item"><input type="checkbox" value="stab"> 🛡️ Stab.</label>
+                <label class="chart-selector-item"><input type="checkbox" value="th"> 💎 TH</label>
             </div>
             <div style="display: flex; gap: 6px; margin-bottom: 12px;">
-                <button type="button" onclick="window.spaApp.updateChartTimeFilter(7)" class="btn-filter" id="filter-7">7j</button>
-                <button type="button" onclick="window.spaApp.updateChartTimeFilter(15)" class="btn-filter" id="filter-15">15j</button>
-                <button type="button" onclick="window.spaApp.updateChartTimeFilter(30)" class="btn-filter" id="filter-30">30j</button>
-                <button type="button" onclick="window.spaApp.updateChartTimeFilter(0)" class="btn-filter active-filter" id="filter-0">Tout</button>
+                <button type="button" class="btn-filter" id="filter-7">7j</button>
+                <button type="button" class="btn-filter" id="filter-15">15j</button>
+                <button type="button" class="btn-filter" id="filter-30">30j</button>
+                <button type="button" class="btn-filter active-filter" id="filter-0">Tout</button>
             </div>
             <div class="chart-container"><canvas id="unifiedChart"></canvas></div>
         </div>
@@ -126,11 +126,11 @@
             </div>
             <!-- Pagination Historique Mesures -->
             <div id="measuresPagination" style="display: none; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border-card);">
-                <button type="button" class="btn-secondary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 0.8rem;" onclick="window.spaApp.prevMeasuresPage()">◀ Précédent</button>
+                <button type="button" id="prevMeasuresPageBtn" class="btn-secondary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 0.8rem;">◀ Précédent</button>
                 <span id="measuresPageIndicator" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Page 1/1</span>
-                <button type="button" class="btn-secondary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 0.8rem;" onclick="window.spaApp.nextMeasuresPage()">Suivant ▶</button>
+                <button type="button" id="nextMeasuresPageBtn" class="btn-secondary" style="width: auto; padding: 6px 12px; margin: 0; font-size: 0.8rem;">Suivant ▶</button>
             </div>
-            <button type="button" class="btn-danger" onclick="window.spaApp.wipeHistoryData()" style="margin-top: 15px;">Effacer l'historique</button>
+            <button type="button" id="wipeHistoryBtn" class="btn-danger" style="margin-top: 15px;">Effacer l'historique</button>
         </div>
     </div>
 
@@ -138,8 +138,6 @@
     <div id="page-maintenance" class="page">
         <div class="card">
             <h2>⚖️ Équilibre de l'eau (LSI)</h2>
-            
-            <!-- JAUGE 1 : LSI (Équilibre Physico-chimique) -->
             <div id="lsiHeaderGauge" class="gauge-container">
                 <div class="gauge-labels">
                     <span>Corrosif</span>
@@ -154,17 +152,13 @@
                 </div>
                 <div id="lsiHeaderValue" class="gauge-text">LSI : --</div>
             </div>
-
             <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px; margin-bottom: 0;">
                 L'indice de Langelier (LSI) mesure la santé globale de vos équipements. Un LSI neutre (entre -0.3 et +0.3) protège les pompes et le réchauffeur.
             </p>
         </div>
 
-        <!-- CARTE SANTÉ BIOLOGIQUE & BIOFILM -->
         <div class="card" id="bioStatusCard">
             <h2>🦠 Santé Biologique & Risque Biofilm</h2>
-            
-            <!-- JAUGE 2 : SANTÉ BIOLOGIQUE & BIOFILM -->
             <div id="bioGaugeContainer" class="gauge-container">
                 <div class="gauge-labels">
                     <span>Sain</span>
@@ -179,33 +173,20 @@
                 </div>
                 <div id="bioGaugeValue" class="gauge-text">Charge bactérienne : En attente...</div>
             </div>
-
-            <!-- Alerte dynamique Biofilm -->
             <div id="biofilmAlertBanner" class="treatment-step" style="display: none; border-left: 4px solid var(--danger, #ef4444); margin-top: 12px; background: rgba(239, 68, 68, 0.08);">
                 <div style="width: 100%;">
                     <strong style="color: var(--danger, #ef4444);">⚠️ ALERTE RISQUE BIOFILM DÉTECTÉ !</strong><br>
                     <span>Votre spa a subi une sous-désinfection prolongée. Un biofilm s'est très probablement développé dans les canalisations.</span>
-                    <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.1); margin: 8px 0;">
-                    <strong>💡 Recommandations d'urgence :</strong>
-                    <ul style="margin: 4px 0 0 18px; padding: 0; font-size: 0.8rem; color: var(--text-color);">
-                        <li>Effectuer un <strong>traitement Choc</strong> (Chlore choc ou Oxygène actif).</li>
-                        <li>Nettoyer à fond la cartouche de <strong>filtre</strong>.</li>
-                        <li>Si l'eau reste poisseuse ou sent le renfermé, appliquer un <strong>nettoyant tuyauterie</strong> lors de la prochaine vidange.</li>
-                    </ul>
                 </div>
             </div>
-
-            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 10px; margin-bottom: 0;">
-                Le biofilm est une matrice bactérienne visqueuse très résistante au chlore. Il se forme rapidement dans les canalisations d'eau chaude stagnante.
-            </p>
         </div>
 
         <div class="card">
             <h2>🧽 Tâches d'entretien</h2>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0;">Planifiez vos fréquences de nettoyage et de suivi.</p>
             <div id="maintenanceContainer"></div>
-            <button type="button" class="btn-success" onclick="window.spaApp.displayAddTaskModal()" style="margin-top: 8px;">+ Ajouter une tâche</button>
-            <button type="button" onclick="window.spaApp.saveMaintenanceTasksFromDOM()" style="margin-top: 8px;">Sauvegarder la planification</button>
+            <button type="button" id="openAddTaskModalBtn" class="btn-success" style="margin-top: 8px;">+ Ajouter une tâche</button>
+            <button type="button" id="saveMaintenanceBtn" style="margin-top: 8px;">Sauvegarder la planification</button>
         </div>
     </div>
 
@@ -215,11 +196,11 @@
             <h2>Spa & Traitement</h2>
             <div class="form-group">
                 <label for="vol">Volume d'eau du Spa (m³)</label>
-                <input type="number" inputmode="decimal" id="vol" value="1.5" step="0.1" oninput="window.spaApp.saveSettingsAndInventory()">
+                <input type="number" inputmode="decimal" id="vol" value="1.5" step="0.1">
             </div>
             <div class="form-group">
                 <label for="disinfectantType">Type de désinfectant principal</label>
-                <select id="disinfectantType" onchange="window.spaApp.toggleDisinfectantOptions(); window.spaApp.saveSettingsAndInventory();">
+                <select id="disinfectantType">
                     <option value="chlore">Chlore</option>
                     <option value="brome">Brome</option>
                     <option value="oxygene">Oxygène Actif</option>
@@ -230,94 +211,85 @@
 
         <div class="card">
             <h2>Paramètres suivis & Cibles (Plages)</h2>
-            
-            <!-- Température -->
             <div class="checkbox-group">
                 <label for="enableTemp">🌡️ Température</label>
-                <input type="checkbox" id="enableTemp" onchange="window.spaApp.toggleSettingsInputVisibility(); window.spaApp.saveSettingsAndInventory();">
+                <input type="checkbox" id="enableTemp">
             </div>
-
-            <!-- pH -->
             <div class="checkbox-group">
-                <label for="enablePh">🧪 pH</label>
-                <input type="checkbox" id="enablePh" onchange="window.spaApp.toggleSettingsInputVisibility(); window.spaApp.saveSettingsAndInventory();">
+                <label for="enablePh">🍋 pH</label>
+                <input type="checkbox" id="enablePh">
             </div>
             <div id="targetPhContainer" class="form-group">
                 <label>Plage pH idéale</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="number" inputmode="decimal" id="phTargetMin" placeholder="Min (ex: 7.2)" step="0.1" oninput="window.spaApp.saveSettingsAndInventory()">
+                    <input type="number" inputmode="decimal" id="phTargetMin" placeholder="Min" step="0.1">
                     <span>à</span>
-                    <input type="number" inputmode="decimal" id="phTargetMax" placeholder="Max (ex: 7.6)" step="0.1" oninput="window.spaApp.saveSettingsAndInventory()">
+                    <input type="number" inputmode="decimal" id="phTargetMax" placeholder="Max" step="0.1">
                 </div>
             </div>
 
-            <!-- Chlore libre -->
             <div class="checkbox-group">
-                <label for="enableChlLibre">💧 Chlore libre (ppm)</label>
-                <input type="checkbox" id="enableChlLibre" onchange="window.spaApp.toggleSettingsInputVisibility(); window.spaApp.saveSettingsAndInventory();">
+                <label for="enableChlLibre">✨ Chlore libre (ppm)</label>
+                <input type="checkbox" id="enableChlLibre">
             </div>
             <div id="targetChlLibreContainer" class="form-group">
                 <label>Plage Chlore libre (ppm)</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="number" inputmode="decimal" id="chlLibreTargetMin" placeholder="Min (ex: 2.0)" step="0.5" oninput="window.spaApp.saveSettingsAndInventory()">
+                    <input type="number" inputmode="decimal" id="chlLibreTargetMin" placeholder="Min" step="0.5">
                     <span>à</span>
-                    <input type="number" inputmode="decimal" id="chlLibreTargetMax" placeholder="Max (ex: 4.0)" step="0.5" oninput="window.spaApp.saveSettingsAndInventory()">
+                    <input type="number" inputmode="decimal" id="chlLibreTargetMax" placeholder="Max" step="0.5">
                 </div>
             </div>
 
-            <!-- Chlore total -->
             <div class="checkbox-group">
                 <label for="enableChlTotal">🧪 Chlore total (ppm)</label>
-                <input type="checkbox" id="enableChlTotal" onchange="window.spaApp.toggleSettingsInputVisibility(); window.spaApp.saveSettingsAndInventory();">
+                <input type="checkbox" id="enableChlTotal">
             </div>
             <div id="targetChlTotalContainer" class="form-group">
                 <label>Plage Chlore total (ppm)</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="number" inputmode="decimal" id="chlTotalTargetMin" placeholder="Min (ex: 2.0)" step="0.5" oninput="window.spaApp.saveSettingsAndInventory()">
+                    <input type="number" inputmode="decimal" id="chlTotalTargetMin" placeholder="Min" step="0.5">
                     <span>à</span>
-                    <input type="number" inputmode="decimal" id="chlTotalTargetMax" placeholder="Max (ex: 4.5)" step="0.5" oninput="window.spaApp.saveSettingsAndInventory()">
+                    <input type="number" inputmode="decimal" id="chlTotalTargetMax" placeholder="Max" step="0.5">
                 </div>
             </div>
 
-            <!-- TAC -->
             <div class="checkbox-group">
-                <label for="enableTac">🛡️ Alcalinité totale (TAC)</label>
-                <input type="checkbox" id="enableTac" onchange="window.spaApp.toggleSettingsInputVisibility(); window.spaApp.saveSettingsAndInventory();">
+                <label for="enableTac">⚖️ Alcalinité totale (TAC)</label>
+                <input type="checkbox" id="enableTac">
             </div>
             <div id="targetTacContainer" class="form-group">
                 <label>Plage TAC idéale (ppm)</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="number" inputmode="decimal" id="tacTargetMin" placeholder="Min (ex: 80)" step="5" oninput="window.spaApp.saveSettingsAndInventory()">
+                    <input type="number" inputmode="decimal" id="tacTargetMin" placeholder="Min" step="5">
                     <span>à</span>
-                    <input type="number" inputmode="decimal" id="tacTargetMax" placeholder="Max (ex: 120)" step="5" oninput="window.spaApp.saveSettingsAndInventory()">
+                    <input type="number" inputmode="decimal" id="tacTargetMax" placeholder="Max" step="5">
                 </div>
             </div>
 
-            <!-- Stabilisant -->
             <div class="checkbox-group">
-                <label for="enableStab">☀️ Stabilisant (ppm)</label>
-                <input type="checkbox" id="enableStab" onchange="window.spaApp.toggleSettingsInputVisibility(); window.spaApp.saveSettingsAndInventory();">
+                <label for="enableStab">🛡️ Stabilisant (ppm)</label>
+                <input type="checkbox" id="enableStab">
             </div>
             <div id="targetStabContainer" class="form-group">
                 <label>Plage Stabilisant (ppm)</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="number" inputmode="decimal" id="stabTargetMin" placeholder="Min (ex: 20)" step="5" oninput="window.spaApp.saveSettingsAndInventory()">
+                    <input type="number" inputmode="decimal" id="stabTargetMin" placeholder="Min" step="5">
                     <span>à</span>
-                    <input type="number" inputmode="decimal" id="stabTargetMax" placeholder="Max (ex: 50)" step="5" oninput="window.spaApp.saveSettingsAndInventory()">
+                    <input type="number" inputmode="decimal" id="stabTargetMax" placeholder="Max" step="5">
                 </div>
             </div>
 
-            <!-- TH -->
             <div class="checkbox-group">
-                <label for="enableTh">💧 Dureté totale (TH)</label>
-                <input type="checkbox" id="enableTh" onchange="window.spaApp.toggleSettingsInputVisibility(); window.spaApp.saveSettingsAndInventory();">
+                <label for="enableTh">💎 Dureté totale (TH)</label>
+                <input type="checkbox" id="enableTh">
             </div>
             <div id="targetThContainer" class="form-group">
                 <label>Plage TH idéale (ppm)</label>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="number" inputmode="decimal" id="thTargetMin" placeholder="Min (ex: 150)" step="10" oninput="window.spaApp.saveSettingsAndInventory()">
+                    <input type="number" inputmode="decimal" id="thTargetMin" placeholder="Min" step="10">
                     <span>à</span>
-                    <input type="number" inputmode="decimal" id="thTargetMax" placeholder="Max (ex: 250)" step="10" oninput="window.spaApp.saveSettingsAndInventory()">
+                    <input type="number" inputmode="decimal" id="thTargetMax" placeholder="Max" step="10">
                 </div>
             </div>
         </div>
@@ -326,21 +298,21 @@
             <h2>🎨 Apparence & Notifications</h2>
             <div class="form-group">
                 <label for="themeSelect">Thème visuel</label>
-                <select id="themeSelect" onchange="window.spaApp.applyTheme()">
+                <select id="themeSelect">
                     <option value="auto">Automatique (Système)</option>
                     <option value="light">Mode Clair</option>
                     <option value="dark">Mode Sombre</option>
                 </select>
             </div>
-            <button type="button" class="btn-secondary" onclick="window.spaApp.requestNotificationPermission()" style="margin-top: 8px;">🔔 Activer les notifications de rappel</button>
+            <button type="button" id="notifPermissionBtn" class="btn-secondary" style="margin-top: 8px;">🔔 Activer les notifications de rappel</button>
         </div>
 
         <div class="card" id="installCard">
             <h2>📱 Application Mobile</h2>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0; margin-bottom: 12px;">
-                Installez l'application sur votre écran d'accueil pour l'utiliser en plein écran (sans barre de navigateur) et hors-ligne.
+                Installez l'application sur votre écran d'accueil pour l'utiliser en plein écran et hors-ligne.
             </p>
-            <button type="button" id="btnInstallApp" class="btn-success" onclick="window.spaApp.installPWA()">📲 Installer l'application</button>
+            <button type="button" id="btnInstallApp" class="btn-success">📲 Installer l'application</button>
             <div id="pwaInstalledNotice" style="display:none; text-align:center; font-size:0.85rem; color:var(--success); font-weight:600; padding:8px;">
                 ✅ Application déjà installée sur cet appareil !
             </div>
@@ -349,21 +321,21 @@
         <div class="card">
             <h2>💾 Sauvegarde & Restauration</h2>
             <div class="grid" style="margin-top: 8px;">
-                <button type="button" class="btn-secondary" onclick="window.spaApp.exportData()" style="margin:0;">📥 Exporter</button>
-                <button type="button" class="btn-secondary" onclick="document.getElementById('importFile').click()" style="margin:0;">📤 Importer</button>
-                <input type="file" id="importFile" style="display: none;" accept=".json" onchange="window.spaApp.importData(event)">
+                <button type="button" id="exportBackupBtn" class="btn-secondary" style="margin:0;">📥 Exporter</button>
+                <button type="button" id="importBackupTriggerBtn" class="btn-secondary" style="margin:0;">📤 Importer</button>
+                <input type="file" id="importFile" style="display: none;" accept=".json">
             </div>
-            <button type="button" class="btn-danger" onclick="window.spaApp.wipeHistoryData()" style="margin-top: 15px;">Réinitialiser toutes les données</button>
+            <button type="button" id="resetAllDataBtn" class="btn-danger" style="margin-top: 15px;">Réinitialiser toutes les données</button>
         </div>
     </div>
 </div>
 
 <nav>
-    <button type="button" class="nav-item active" onclick="window.spaApp.switchPage('measures', 'Saisie des Mesures', this)"><span class="icon">🧪</span><span>Mesures</span></button>
-    <button type="button" class="nav-item" onclick="window.spaApp.switchPage('treatment', 'Actions & Produits', this)"><span class="icon">📋</span><span>Traitement</span></button>
-    <button type="button" class="nav-item" onclick="window.spaApp.switchPage('charts', 'Suivi & Historique', this)"><span class="icon">📈</span><span>Suivi</span></button>
-    <button type="button" class="nav-item" onclick="window.spaApp.switchPage('maintenance', 'Entretien du Spa', this)"><span class="icon">🧰</span><span>Entretien</span></button>
-    <button type="button" class="nav-item" onclick="window.spaApp.switchPage('targets', 'Réglages & Cibles', this)"><span class="icon">⚙️</span><span>Réglages</span></button>
+    <button type="button" class="nav-item active"><span class="icon">🧪</span><span>Mesures</span></button>
+    <button type="button" class="nav-item"><span class="icon">📋</span><span>Traitement</span></button>
+    <button type="button" class="nav-item"><span class="icon">📈</span><span>Suivi</span></button>
+    <button type="button" class="nav-item"><span class="icon">🧰</span><span>Entretien</span></button>
+    <button type="button" class="nav-item"><span class="icon">⚙️</span><span>Réglages</span></button>
 </nav>
 
 <script type="module" src="js/main.js"></script>
