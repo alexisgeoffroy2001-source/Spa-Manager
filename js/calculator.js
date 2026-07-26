@@ -161,18 +161,27 @@ export function loadTargets() {
 
     toggleDisinfectantOptions();
 
+    // Restauration stricte des cases à cocher
     ['Temp', 'Ph', 'ChlLibre', 'ChlTotal', 'Tac', 'Stab', 'Th'].forEach(param => {
         const checkbox = document.getElementById(`enable${param}`);
         if (checkbox) {
             const savedValue = localStorage.getItem(`spa_enable${param}`);
-            // Si la clé n'existe pas encore, on coche par défaut, sinon on convertit explicitement la chaîne en booléen
-            if (savedValue === null) {
+            if (savedValue !== null) {
+                // On applique exactement ce qui est stocké ("true" ou "false")
+                checkbox.checked = (savedValue === 'true');
+            } else {
+                // Par défaut si rien n'est enregistré
                 checkbox.checked = true;
                 localStorage.setItem(`spa_enable${param}`, 'true');
-            } else {
-                checkbox.checked = (savedValue === 'true');
             }
         }
+    });
+
+    ['ph', 'tac', 'chlLibre', 'chlTotal', 'stab', 'th'].forEach(param => {
+        const minEl = document.getElementById(`${param}TargetMin`);
+        const maxEl = document.getElementById(`${param}TargetMax`);
+        if (minEl) minEl.value = localStorage.getItem(`spa_${param}TargetMin`) ?? DEFAULT_RANGES[param]?.min ?? '';
+        if (maxEl) maxEl.value = localStorage.getItem(`spa_${param}TargetMax`) ?? DEFAULT_RANGES[param]?.max ?? '';
     });
 
     const container = document.getElementById('dynamicProductsList');
